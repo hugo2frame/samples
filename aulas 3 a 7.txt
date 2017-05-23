@@ -1,0 +1,514 @@
+#Atalho para fazer comentarios longos
+if(FALSE)
+	"aula 3 - 
+	preciso replicar a sintaxe da aula 2 (a mesma), mas agora
+	também com as medidas de dispersão (variância e desvio 
+	padrão, para as variáveis que foram aplicáveis). Não precisa
+	dos gráficos, somente dos resumos de dados. A sintaxe não 
+	precisa explicitar a forma de calcular as medidas de posição,
+	somente precisa dar os comandos mais comuns delas."
+
+#A biblioteca abaixo exige o Java adequado.
+#Se ocorrer algum problema, veja o link
+#https://www.r-bloggers.com/read-excel-files-from-r/
+library(xlsx)
+
+#Adequar ao endereco usado
+filmes<-read.xlsx("C:/Users/aaa/Desktop/Filmes Amostra - Versao Final.xlsx", 
+	sheetName = "filmes")
+
+#Dimensoes da base
+dim(filmes)
+
+#Inspecionar variaveis e tipos
+lapply(filmes, function(x) class(x))
+
+#Inspecionar as 10 primeiras linhas
+head(filmes, 10)
+
+#Retorna algumas medidas de posicao e de dispersao 
+#para uma base. As variaveis devem ser numericas.
+#Para a base filmes, as variaveis numericas sao 
+#a terceira, a setima, a nona e a decima.
+resumo<-function(base){
+	df=data.frame(base)
+	lapply(df, function(x) 
+		list(	quantidade=length(x),
+			missing=sum(is.na(x)),
+			minimo=min(x),
+			mediana=median(x),
+			media=median(x),
+			maximo=max(x),
+			variancia=var(x),
+			desvio.padrao=sd(x)))}
+
+res<-resumo(filmes[, c(3,7,9,10)])	
+
+#Inspecionar o conteudo de res
+names(res)
+
+#Inspecionar o resultado para a variavel bilheteria 
+#nos EUA, a terceira variavel da base filmes
+res$"bilheteria.nos.EUA..dolares."
+
+#ou, equivalentemente, a primeira variavel
+#da base usada na funcao resumo
+res[[1]]
+
+#Somente a terceira variavel
+res<-resumo(filmes[, 3])
+
+#Inspecionar o desvio padrao.
+#Obs.: base eh o nome default 
+#retornado pela funcao resumo.
+res$base$desvio.padrao
+
+#########################################################################
+
+#Atalho para fazer comentarios longos
+if(FALSE)		
+	"aula 4 - 
+	sintaxe para quantis e box plots, intervalo interquartilico, 
+	limite superior (Q3+1,5*IQR) e inferior (Q1-1,5*IQR) criar
+	nova base com 3 variaveis (1 continua, 1 temporal, 1 nominal - 
+	a base não precisa ter correlação temporal), calcular os valores
+	para cada uma das métricas acima por nível."
+
+library(graphics)
+
+#A biblioteca abaixo exige o Java adequado.
+#Se ocorrer algum problema, veja o link
+#https://www.r-bloggers.com/read-excel-files-from-r/
+library(xlsx)
+
+#Adequar ao endereco usado
+filmes<-read.xlsx("C:/Users/aaa/Desktop/Filmes Amostra - Versao Final.xlsx", 
+	sheetName = "filmes")
+
+#Dimensoes da base
+dim(filmes)
+
+#Inspecionar variaveis e tipos
+lapply(filmes, function(x) class(x))
+
+#Inspecionar as 10 primeiras linhas
+head(filmes, 10)
+
+#Retorna algumas informacoes usadas pela funcao boxplot
+#para gerar o grafico. As variaveis devem ser numericas 
+#ou datas. Para a base filmes, as variaveis numericas ou
+#datas sao a terceira, a quinta, a setima, a nona e a decima.
+bp.info<-function(base){
+	df<-data.frame(base)
+	lapply(df, function(x) {
+		f<-boxplot(x, range=1.5, plot=F)
+		list(	quantidade=length(x),
+			missing=sum(is.na(x)),
+			limite.inferior=f$stats[1],
+			quartil.1=f$stats[2],
+			mediana=f$stats[3],
+			quartil.3=f$stats[4],
+			limite.superior=f$stats[5],
+			iqr=f$stats[4]-f$stats[2],
+			indice.outlier.inferior=which(x<f$stats[1]),
+			indice.outlier.superior=which(x>f$stats[5]))})}
+
+res<-bp.info(filmes[, c(3,5,7,9,10)])
+
+#Inspecionar o conteudo de res
+names(res)
+
+#Inspecionar o resultado para a variavel lancamento,
+#a quinta variavel da base filmes
+res$lancamento
+
+#Gera o grafico boxplot para a terceira variavel
+#da base filmes
+dev.new()
+boxplot(filmes[,3], range=1.5, col="red",
+	main="Exemplo de Boxplot",
+	ylab="Bilheteria nos EUA (dolares)")
+
+#A oitava variavel eh categorica, podendo ser usada
+#para agrupar as observacoes(i.e. as linhas da base).
+#O comando a seguir devolve as informacoes geradas
+#em bp.info, mas por grupo de classificacao (i.e. 
+#a oitava variavel da base filmes)
+res<-by(filmes[, c(3,5,7,9,10)], filmes[, 8], bp.info)
+
+#Inspecionar o conteudo de res
+names(res)
+
+#Inspecionar o conteudo do grupo PG-13
+names(res$"PG-13")
+
+#Inspecionar o resultado para o grupo PG-13 e a variavel
+#lancamento, a quinta da base filmes
+res$"PG-13"$lancamento
+
+#Gera o grafico boxplot para a terceira variavel
+#da base filmes, mas por grupo da variavel 
+#classificacao (i.e. a oitava variavel da base filmes).
+#Por conveniencia foi usada a formula 
+#	filmes[,3]~filmes[,8]
+#em vez da equivalente 
+#	bilheteria.nos.EUA..dolares.~classificacao
+dev.new()
+boxplot(filmes[,3]~filmes[,8], range=1.5, col="red",
+	main="Exemplo de Boxplot por grupo",
+	xlab="Classificacao",
+	ylab="Bilheteria nos EUA (dolares)")
+
+#Somente a terceira variavel
+res<-bp.info(filmes[, 3])
+
+#Inspecionar o iqr (intervalo interquartilico).
+#Obs.: base eh o nome default 
+#retornado pela funcao resumo.
+res$base$iqr
+
+#Atalho para fazer comentarios longos
+if(FALSE)
+	"Preciso de um exemplo específico sobre transformação 
+	de variáveis (algum com logx, por exemplo) variável + 
+	gráfico X x índice do dado + medidas de posição + 
+	medidas de dispersão variável com transformação + 
+	gráfico logX x índice do dado + medidas de posição + 
+	medidas de dispersão."
+
+#A funcao abaixo foi usada na aula 3.
+#Retorna algumas medidas de posicao e de dispersao 
+#para uma base. As variaveis devem ser numericas.
+#Para a base filmes, as variaveis numericas sao 
+#a terceira, a setima, a nona e a decima.
+resumo<-function(base){
+	df=data.frame(base)
+	lapply(df, function(x) 
+		list(	quantidade=length(x),
+			missing=sum(is.na(x)),
+			minimo=min(x),
+			mediana=median(x),
+			media=median(x),
+			maximo=max(x),
+			variancia=var(x),
+			desvio.padrao=sd(x)))}
+
+#Compare algumas medidas de posicao e dispersao 
+#sobre as variaveis originais tempo de duracao  
+#(setima variavel na base filmes) e orcamento  
+#(nona variavel na base filmes) com as mesmas 
+#sobre o logaritmo dessas variaveis
+
+##########Tempo de Duracao do Filme e o seu Logaritmo
+res<-resumo(data.frame(duracao=filmes[, 7], log.duracao=log(filmes[, 7])))	
+res
+
+##########Orcamento e o seu Logaritmo
+res<-resumo(data.frame(orcamento=filmes[, 9], log.orcamento=log(filmes[, 9])))	
+res
+
+#Compare os boxplot's e histogramas sobre as variaveis 
+#originais tempo de duracao (setima variavel na base filmes) 
+#e orcamento (nona variavel na base filmes) com o 
+#resultado sobre o logaritmo dessas variaveis
+
+##########Tempo de Duracao do Filme e o seu Logaritmo
+res<-bp.info(data.frame(duracao=filmes[, 7], log.duracao=log(filmes[, 7])))	
+res
+
+#Boxplot de Tempo de Duracao
+dev.new()
+boxplot(filmes[, 7], range=1.5, col="red", horizontal=T,
+	main="Exemplo de Boxplot",
+	xlab="Tempo de Duracao (minutos)")
+
+#Boxplot do Logaritmo do Tempo de Duracao
+dev.new()
+boxplot(log(filmes[, 7]), range=1.5, col="red", horizontal=T,
+	main="Exemplo de Boxplot",
+	xlab="Log. do Tempo de Duracao")
+
+#Histograma do Tempo de Duracao - sintaxe da aula 2
+dev.new()
+hist(filmes[, 7], freq=F,
+	main=paste("Exemplo de Histograma e Densidade da Normal"), 
+	xlab="Tempo de Duracao (minutos)", ylab="densidade", col="red")
+
+#adicionar a media e a mediana ao histograma
+abline(v=mean(filmes[, 7]), col = "black", lwd = 3)
+abline(v=median(filmes[, 7]), col = "black", lwd = 3, lty=3)
+legend(x = "topright", bg="white",
+ 	c("media", "mediana"),
+ 	col = c("black", "black"),
+ 	lwd = c(3, 3),
+	lty = c(1, 3))
+
+#adicionar uma curva normal ao histograma
+curve(dnorm(x, mean=mean(filmes[, 7]), sd=sd(filmes[, 7])), 
+	lty=2, lwd=3, col="black", add=TRUE)
+
+#Histograma do Logaritmo do Tempo de Duracao - sintaxe da aula 2
+dev.new()
+hist(log(filmes[, 7]), freq=F,
+	main=paste("Exemplo de Histograma e Densidade da Normal"), 
+	xlab="Log. do Tempo de Duracao", ylab="densidade", col="red")
+
+#adicionar a media e a mediana ao histograma
+abline(v=mean(log(filmes[, 7])), col = "black", lwd = 3)
+abline(v=median(log(filmes[, 7])), col = "black", lwd = 3, lty=3)
+legend(x = "topright", bg="white",
+ 	c("media", "mediana"),
+ 	col = c("black", "black"),
+ 	lwd = c(3, 3),
+	lty = c(1, 3))
+
+#adicionar uma curva normal ao histograma
+curve(dnorm(x, mean=mean(log(filmes[, 7])), sd=sd(log(filmes[, 7]))), 
+	lty=2, lwd=3, col="black", add=TRUE)
+
+##########Orcamento e o seu Logaritmo
+res<-bp.info(data.frame(orcamento=filmes[, 9], log.orcamento=log(filmes[, 9])))	
+res
+
+#Boxplot do Orcamento 
+dev.new()
+boxplot(filmes[, 9], range=1.5, col="red", horizontal=T,
+	main="Exemplo de Boxplot",
+	xlab="Orcamento (dolares)")
+
+#Boxplot do Logaritmo do Orcamento
+dev.new()
+boxplot(log(filmes[, 9]), range=1.5, col="red", horizontal=T,
+	main="Exemplo de Boxplot",
+	xlab="Log. do Orcamento")
+
+#Histograma do Orcamento - sintaxe da aula 2
+dev.new()
+hist(filmes[, 9], freq=F,
+	main=paste("Exemplo de Histograma e Densidade da Normal"), 
+	xlab="Orcamento (dolares)", ylab="densidade", col="red")
+
+#adicionar a media e a mediana ao histograma
+abline(v=mean(filmes[, 9]), col = "black", lwd = 3)
+abline(v=median(filmes[, 9]), col = "black", lwd = 3, lty=3)
+legend(x = "topright", bg="white",
+ 	c("media", "mediana"),
+ 	col = c("black", "black"),
+ 	lwd = c(3, 3),
+	lty = c(1, 3))
+
+#adicionar uma curva normal ao histograma
+curve(dnorm(x, mean=mean(filmes[, 9]), sd=sd(filmes[, 9])), 
+	lty=2, lwd=3, col="black", add=TRUE)
+
+#Histograma do Logaritmo do Orcamento - sintaxe da aula 2
+dev.new()
+hist(log(filmes[, 9]), freq=F,
+	main=paste("Exemplo de Histograma e Densidade da Normal"), 
+	xlab="Log. do Orcamento", ylab="densidade", col="red")
+
+#adicionar a media e a mediana ao histograma
+abline(v=mean(log(filmes[, 9])), col = "black", lwd = 3)
+abline(v=median(log(filmes[, 9])), col = "black", lwd = 3, lty=3)
+legend(x = "topright", bg="white",
+ 	c("media", "mediana"),
+ 	col = c("black", "black"),
+ 	lwd = c(3, 3),
+	lty = c(1, 3))
+
+#adicionar uma curva normal ao histograma
+curve(dnorm(x, mean=mean(log(filmes[, 9])), sd=sd(log(filmes[, 9]))), 
+	lty=2, lwd=3, col="black", add=TRUE)
+
+#########################################################################
+
+#Atalho para fazer comentarios longos
+if(FALSE)		
+	"aula 5 - 
+	Preciso de: uma base que tenha 1 de cada variavel 
+	(nominal, ordinal, discreta e contínua);
+	Para estudar distribuição conjunta: Usar as variáveis
+	(nominal e ordinal) e as variáveis (discreta e contínua),
+	e montar uma distribuição conjunta para cada par de variáveis.
+	Criar as tabelas abaixo para cada par de variáveis 
+	que está sendo estudado (saida comum do R mesmo,
+	só arrumadinha pra eu poder dar print screen e conseguir
+	colar no ppt - NADA FANCY):
+		* soma dos casos
+		* totalizado pelo % linha
+		* totalizado pelo % coluna
+		* totalizado pelo % total
+
+	Associação de 2 variáveis qualitativas: valor do qui-quadrado
+	da tabela, com teste, só pra discutir o valor (vou lembra-los
+	que isso sera dado em aulas futuras)
+
+	Associação de 2 variáveis quantitativas: dispersão e correlação,
+	fazer gráfico de dispersão e calcular coeficiente de correlação
+	de Pearson"
+
+library(descr)
+library(graphics)
+
+#O arquivo abaixo foi usado na segunda aula,
+#assim como o trecho da sintaxe para a leitura 
+#desta base.
+
+#A biblioteca abaixo exige o Java adequado.
+#Se ocorrer algum problema, veja o link
+#https://www.r-bloggers.com/read-excel-files-from-r/
+library(xlsx)
+
+#Adequar ao endereco usado
+filmes<-read.xlsx("C:/Users/aaa/Desktop/Filmes Amostra - Versao Final.xlsx", 
+	sheetName = "filmes")
+
+#Dimensoes da base
+dim(filmes)
+
+#Inspecionar variaveis e tipos
+lapply(filmes, function(x) class(x))
+
+#Inspecionar as 10 primeiras linhas
+head(filmes, 10)
+
+#A variavel classificacao eh categorica ordinal
+#cujos os niveis em ordem crescente de restritividade
+#sao G (publico geral), PG (recomenda a companhia de um adulto),
+#PG-13 (recomenda fortemente a companhia de um adulto e alerta
+#para a existencia de cenas inadequadas a menores de 13 anos) e
+#R (inadequado para menores de 17 desacompnhados de um adulto). 
+#A variavel distribuidor eh categorica nominal.
+
+#Tabela cruzada para as duas categoricas
+#e teste Chi^2 de independencia
+tabela<-with(filmes, CrossTable(distribuidor, classificacao, 
+	prop.chisq = F, chisq = T))
+tabela
+
+#Tabela cruzada para as duas numericas
+dados<-data.frame(
+	duracao = cut(filmes[, 7], 
+		c(0, quantile(filmes[, 7], c(0.25, 0.5, 0.75)), Inf),
+		include.lowest = T),
+	orcamento = cut(filmes[, 9], 
+		c(0, quantile(filmes[, 9], c(0.25, 0.5, 0.75)), Inf),
+		include.lowest = T))
+tabela<-with(dados, CrossTable(duracao, orcamento,
+	prop.chisq = F))
+tabela
+
+#Grafico de dispersao, coeficiente de correlacao de Pearson e teste
+#da nulidade do mesmo, para as numericas e seus logaritmos
+dev.new()
+plot(filmes[, 7], filmes[, 9],
+	main = "Grafico de dispersao",
+	xlab = "Duracao (minutos)",
+	ylab = "Orcamento (dolares)",
+	xlim = c(min(filmes[, 7]), max(filmes[, 7])),
+	ylim = c(min(filmes[, 9]), max(filmes[, 9])),
+	pch = 20, col = rgb(1,0,0, alpha=0.1))
+
+#Adiciciona uma linha de "melhor ajuste" ao grafico
+abline(reg = lm(filmes[, 9] ~ filmes[, 7]), 
+	col = "red", lty = 3)
+
+#Adiciona o coeficiente de correlacao e 
+#o teste de nulidade ao grafico
+teste<-cor.test(filmes[, 7], filmes[, 9],
+	method = "pearson", alternative = "two.sided")
+mtext(paste("Correlacao (p-valor bicaudal) : ", 
+		format(teste$estimate, digits=2), 
+		" (", format(teste$p.value, digits=2),")", 
+		sep=""))
+
+#Logaritmos
+dev.new()
+plot(log(filmes[, 7]), log(filmes[, 9]),
+	main = "Grafico de dispersao",
+	xlab = "Log de Duracao",
+	ylab = "Log de Orcamento",
+	xlim = c(min(log(filmes[, 7])), max(log(filmes[, 7]))),
+	ylim = c(min(log(filmes[, 9])), max(log(filmes[, 9]))),
+	pch = 20, col = rgb(1,0,0, alpha=0.1))
+
+#Adiciciona uma linha de "melhor ajuste" ao grafico
+abline(reg = lm(log(filmes[, 9]) ~ log(filmes[, 7])), 
+	col = "red", lty = 3)
+
+#Adiciona o coeficiente de correlacao e 
+#o teste de nulidade ao grafico
+teste<-cor.test(log(filmes[, 7]), log(filmes[, 9]),
+	method = "pearson", alternative = "two.sided")
+mtext(paste("Correlacao (p-valor bicaudal) : ", 
+		format(teste$estimate, digits=2), 
+		" (", format(teste$p.value, digits=2),")", 
+		sep=""))
+
+#########################################################################
+
+#Atalho para fazer comentarios longos
+if(FALSE)		
+	"aula 6 - (continuação da 5)
+	Associação de 1 variável qualitativa com 1 variável 
+	quantitativa: gráficos de dispersão e box plot para 
+	cada nível da variável qualitativa; média + variância
+	da quantitativa condicionado em cada nível da variável 
+	qualitativa."
+
+library(lattice)
+
+#O arquivo abaixo foi usado na segunda aula,
+#assim como o trecho da sintaxe para a leitura 
+#desta base.
+
+#A biblioteca abaixo exige o Java adequado.
+#Se ocorrer algum problema, veja o link
+#https://www.r-bloggers.com/read-excel-files-from-r/
+library(xlsx)
+
+#Adequar ao endereco usado
+filmes<-read.xlsx("C:/Users/aaa/Desktop/Filmes Amostra - Versao Final.xlsx", 
+	sheetName = "filmes")
+
+#Dimensoes da base
+dim(filmes)
+
+#Inspecionar variaveis e tipos
+lapply(filmes, function(x) class(x))
+
+#Inspecionar as 10 primeiras linhas
+head(filmes, 10)
+
+#A variavel classificacao (a oitava variavel) eh categorica 
+#ordinal cujos os niveis em ordem crescente de restritividade
+#sao G (publico geral), PG (recomenda a companhia de um adulto),
+#PG-13 (recomenda fortemente a companhia de um adulto e alerta
+#para a existencia de cenas inadequadas a menores de 13 anos) e
+#R (inadequado para menores de 17 desacompnhados de um adulto). 
+#A variavel  bilheteria.no.mundo..dolares. (a decima variavel)
+#eh numerica.
+
+#Grafico de dispersao
+dev.new()
+dotplot(filmes[, 8] ~ filmes[, 10],
+	main = "Grafico de dispersao",
+	xlab = "Bilheteria Mundial (dolares)",
+	ylab = "Classificacao M.P.A.A.",
+	cex = 1.5, pch = 20, col = rgb(1,0,0, alpha=0.1))
+
+#Boxplot do Orcamento 
+dev.new()
+boxplot(filmes[, 10] ~ filmes[, 8], 
+	main = "Boxplot",
+	xlab = "Bilheteria Mundial (dolares)",
+	ylab = "Classificacao M.P.A.A.",
+	range = 1.5, col = "red", 
+	horizontal = T)
+
+f<-do.call(rbind, by(filmes[, 10], filmes[, 8], function(x) 
+	c(qtde = length(x),
+	media = mean(x), 
+	desvio.padrao = sd(x))))
+
+
