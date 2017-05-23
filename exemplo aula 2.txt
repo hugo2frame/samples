@@ -1,400 +1,155 @@
-> 
-> 
-> media_amostral<-function(x){
-+     
-+     #numero de elementos
-+     ne<-length(x)
-+     
-+     #soma dos elementos
-+     se<-sum(x)
-+     
-+     media<-se/ne
-+     return(media)
-+ }
-> 
-> mediana_amostral<-function(x){
-+     
-+     #numero de elementos
-+     ne<-length(x)
-+     
-+     #elementos em ordem crescente
-+     eod<-x[order(x)]
-+     
-+     #numero impar de elementos?
-+     if(ne%%2){
-+         #sim, numero impar de elementos
-+         mediana<-eod[1+ne%/%2]
-+         return(mediana)
-+     }
-+     else{
-+         #nao, numero par de elementos
-+         mediana<-(eod[ne%/%2]+eod[1+ne%/%2])/2
-+         return(mediana)
-+     }
-+ }
-> 
-> frequencia_amostral<-function(x){
-+     
-+     #elementos diferentes
-+     ed<-unique(x)
-+     
-+     #frequencia de cada elemento diferente
-+     frequencia<-sapply(ed, function(e) sum(x==e))
-+     names(frequencia)<-ed
-+     
-+     #frequencias em ordem decrescente
-+     frequencia<-frequencia[order(frequencia, decreasing=T)]
-+     return(frequencia)
-+ }
-> 
-> moda_amostral<-function(x){
-+     
-+     #frequencias em ordem decrescente
-+     fed<-frequencia_amostral(x)
-+     
-+     #elementos com maxima frequencia
-+     moda<-names(fed)[which(fed==fed[1])]
-+     return(moda)
-+ }
-> 
-> sumario<-function(df)
-+     
-+     #para cada variavel de um dataframe 
-+     #a funcao calcula as medidas
-+     #e gera os graficos adequados
-+     #ao tipo da variavel 
-+     lapply(df, function(x) 
-+         #a variavel eh numerica?
-+         if(is.numeric(x))
-+             #sim, a variavel eh numerica discreta ou continua
-+             list(tipo="numerica discreta ou continua",
-+                  media=media_amostral(x), 
-+                  mediana=mediana_amostral(x), 
-+                  moda=moda_amostral(x),
-+                  frequencia=frequencia_amostral(x))
-+         
-+         else
-+             #nao, a variavel eh nominal ou ordinal
-+             list(tipo="categorica nominal ou ordinal",
-+                  moda=moda_amostral(x),
-+                  frequencia=frequencia_amostral(x)))
-> 
-> gerador_de_dados<-function(n){
-+     
-+     #gera uma tabela de dados
-+     data.frame(nominal=sample(c("camisa",
-+                                 "camiseta",
-+                                 "sapato",
-+                                 "bolsa",
-+                                 "colete"), n, replace=T),
-+                ordinal=as.factor(sample(1:5, n, replace=T)),
-+                discreta=sample(1:6, n, replace=T),
-+                continua=rnorm(n, 0, 1),
-+                stringsAsFactors=F)
-+ }
-> 
-> #gera os dados
-> dados<-gerador_de_dados(100)
-> dados
-     nominal ordinal discreta     continua
-1      bolsa       3        3 -0.611015581
-2     sapato       3        5 -0.101747343
-3      bolsa       5        6  0.505630059
-4      bolsa       1        2  0.688730224
-5     camisa       3        5  0.108333776
-6     sapato       4        1 -1.826360696
-7     sapato       4        2  0.912962829
-8     camisa       3        1  0.296733296
-9     camisa       5        1 -0.563976333
-10  camiseta       5        5  0.780479720
-11     bolsa       3        5 -0.052341901
-12    colete       4        4  0.728798313
-13    camisa       5        5  0.406898832
-14    sapato       5        1  0.814090984
-15    sapato       3        2  0.994920613
-16    sapato       5        6  0.844744295
-17  camiseta       5        2  0.151308865
-18     bolsa       2        3 -1.109149162
-19    sapato       4        2 -1.518818362
-20    colete       4        5 -0.673262373
-21    sapato       5        3 -0.250660579
-22     bolsa       4        4 -0.492169015
-23    colete       3        3  1.229006404
-24    sapato       4        3  1.511593582
-25    sapato       1        2 -1.722709245
-26    sapato       2        3 -1.041422178
-27    camisa       4        2 -0.545638688
-28  camiseta       2        1  2.026428816
-29    sapato       4        6 -0.852317079
-30     bolsa       4        4 -1.602249780
-31    colete       3        5 -1.412636555
-32  camiseta       1        5  0.287975351
-33    colete       2        3  0.085952941
-34    colete       1        1 -0.038200325
-35    colete       2        6  1.852156874
-36    colete       2        5  1.120476476
-37    camisa       5        6  0.423286271
-38    camisa       4        1 -2.130799468
-39    sapato       5        5  0.872218155
-40    camisa       5        4 -0.483510635
-41     bolsa       5        2 -1.061773886
-42    sapato       1        5 -0.683395251
-43  camiseta       5        6 -0.576135191
-44    camisa       3        3  0.201049456
-45    sapato       4        1 -0.140825990
-46  camiseta       2        6  1.615396742
-47    sapato       3        3 -0.866684654
-48     bolsa       1        6  1.000388618
-49    colete       2        6 -1.492737235
-50    sapato       2        3 -0.102738802
-51     bolsa       1        6 -1.003987573
-52    colete       1        5 -0.161695675
-53  camiseta       4        5 -0.705055647
-54    colete       2        3 -2.317654773
-55    sapato       5        1  0.410804653
-56     bolsa       3        6  0.012880911
-57    sapato       4        1 -1.084287731
-58    camisa       2        2  2.563374252
-59     bolsa       1        4 -1.007391194
-60    camisa       4        5  1.522803350
-61    camisa       3        4  1.094941558
-62    sapato       5        1  1.283007327
-63    sapato       1        5 -0.228053988
-64    camisa       3        2  0.705840140
-65  camiseta       5        2 -0.221371723
-66     bolsa       1        2 -2.833453083
-67  camiseta       1        5  2.345420091
-68     bolsa       4        3  0.671548734
-69     bolsa       1        5  0.241385091
-70    colete       5        4 -0.399691196
-71  camiseta       3        4 -0.126564103
-72    camisa       1        3 -0.076452312
-73    camisa       3        6  0.114658053
-74    camisa       2        6 -1.467313887
-75    colete       3        1 -0.860801669
-76     bolsa       1        5  0.636865297
-77    camisa       2        1 -0.835230786
-78    sapato       5        2 -0.006601971
-79    colete       4        6 -1.427579133
-80    sapato       4        4  0.615703174
-81  camiseta       4        6  1.256862462
-82    sapato       4        1  2.047882869
-83  camiseta       2        2 -0.365102312
-84    camisa       2        3 -0.291560543
-85    camisa       4        2 -0.328739122
-86  camiseta       1        4 -0.499459569
-87    camisa       3        2  1.742150932
-88    colete       5        6 -0.392889863
-89    camisa       5        3 -0.228441224
-90     bolsa       4        1  0.209441507
-91     bolsa       4        6 -0.360843468
-92    colete       3        4 -0.528273180
-93    sapato       3        1 -1.469054879
-94  camiseta       3        3  0.026025304
-95     bolsa       1        6  1.255613146
-96    camisa       5        5 -1.824332536
-97    camisa       5        2  0.950828775
-98  camiseta       2        3 -0.588609727
-99    colete       2        2  1.015562319
-100   sapato       1        4  0.154325925
-> 
-> #calcula as medidas
-> medidas<-sumario(dados)
-> medidas
-$nominal
-$nominal$tipo
-[1] "categorica nominal ou ordinal"
-
-$nominal$moda
-[1] "sapato"
-
-$nominal$frequencia
-  sapato   camisa    bolsa   colete camiseta 
-      26       23       19       17       15 
 
 
-$ordinal
-$ordinal$tipo
-[1] "categorica nominal ou ordinal"
+media_amostral<-function(x){
+    
+    #numero de elementos
+    ne<-length(x)
+    
+    #soma dos elementos
+    se<-sum(x)
+    
+    media<-se/ne
+    return(media)
+}
 
-$ordinal$moda
-[1] "4"
+mediana_amostral<-function(x){
+    
+    #numero de elementos
+    ne<-length(x)
+    
+    #elementos em ordem crescente
+    eod<-x[order(x)]
+    
+    #numero impar de elementos?
+    if(ne%%2){
+        #sim, numero impar de elementos
+        mediana<-eod[1+ne%/%2]
+        return(mediana)
+    }
+    else{
+        #nao, numero par de elementos
+        mediana<-(eod[ne%/%2]+eod[1+ne%/%2])/2
+        return(mediana)
+    }
+}
 
-$ordinal$frequencia
- 4  5  3  1  2 
-23 22 20 18 17 
+frequencia_amostral<-function(x){
+    
+    #elementos diferentes
+    ed<-unique(x)
+    
+    #frequencia de cada elemento diferente
+    frequencia<-sapply(ed, function(e) sum(x==e))
+    names(frequencia)<-ed
+    
+    #frequencias em ordem decrescente
+    frequencia<-frequencia[order(frequencia, decreasing=T)]
+    return(frequencia)
+}
 
+moda_amostral<-function(x){
+    
+    #frequencias em ordem decrescente
+    fed<-frequencia_amostral(x)
+    
+    #elementos com maxima frequencia
+    moda<-names(fed)[which(fed==fed[1])]
+    return(moda)
+}
 
-$discreta
-$discreta$tipo
-[1] "numerica discreta ou continua"
+sumario<-function(df)
+    
+    #para cada variavel de um dataframe 
+    #a funcao calcula as medidas
+    #e gera os graficos adequados
+    #ao tipo da variavel 
+    lapply(df, function(x) 
+        #a variavel eh numerica?
+        if(is.numeric(x))
+            #sim, a variavel eh numerica discreta ou continua
+            list(tipo="numerica discreta ou continua",
+                 media=media_amostral(x), 
+                 mediana=mediana_amostral(x), 
+                 moda=moda_amostral(x),
+                 frequencia=frequencia_amostral(x))
+        
+        else
+            #nao, a variavel eh nominal ou ordinal
+            list(tipo="categorica nominal ou ordinal",
+                 moda=moda_amostral(x),
+                 frequencia=frequencia_amostral(x)))
 
-$discreta$media
-[1] 3.54
+gerador_de_dados<-function(n){
+    
+    #gera uma tabela de dados
+    data.frame(nominal=sample(c("camisa",
+                                "camiseta",
+                                "sapato",
+                                "bolsa",
+                                "colete"), n, replace=T),
+               ordinal=as.factor(sample(1:5, n, replace=T)),
+               discreta=sample(1:6, n, replace=T),
+               continua=rnorm(n, 0, 1),
+               stringsAsFactors=F)
+}
 
-$discreta$mediana
-[1] 3
+#gera os dados
+dados<-gerador_de_dados(100)
+dados
 
-$discreta$moda
-[1] "5"
-
-$discreta$frequencia
- 5  6  2  3  1  4 
-19 18 18 17 16 12 
-
-
-$continua
-$continua$tipo
-[1] "numerica discreta ou continua"
-
-$continua$media
-[1] -0.03256282
-
-$continua$mediana
-[1] -0.08909983
-
-$continua$moda
-  [1] "-0.611015580815131"   "-0.101747343110775"   "0.50563005888218"    
-  [4] "0.688730224111623"    "0.108333775647724"    "-1.82636069640619"   
-  [7] "0.912962829444157"    "0.296733295835738"    "-0.56397633291331"   
- [10] "0.78047972021995"     "-0.0523419011109974"  "0.728798313242795"   
- [13] "0.406898831592171"    "0.81409098442175"     "0.994920613294305"   
- [16] "0.84474429516057"     "0.151308865096316"    "-1.10914916155477"   
- [19] "-1.51881836150434"    "-0.673262372540106"   "-0.250660578640545"  
- [22] "-0.492169014510021"   "1.22900640446964"     "1.51159358231646"    
- [25] "-1.72270924517278"    "-1.04142217804179"    "-0.545638687910345"  
- [28] "2.02642881588632"     "-0.852317079065025"   "-1.60224977956532"   
- [31] "-1.41263655484057"    "0.287975350755485"    "0.0859529412914384"  
- [34] "-0.0382003245465664"  "1.85215687405371"     "1.12047647636474"    
- [37] "0.423286270783424"    "-2.13079946805956"    "0.87221815466709"    
- [40] "-0.483510635019553"   "-1.0617738856738"     "-0.683395251404499"  
- [43] "-0.576135190643624"   "0.20104945620515"     "-0.140825989755349"  
- [46] "1.61539674209589"     "-0.866684654276423"   "1.00038861812149"    
- [49] "-1.49273723536925"    "-0.102738802111731"   "-1.00398757318661"   
- [52] "-0.161695675096459"   "-0.70505564655579"    "-2.31765477300412"   
- [55] "0.410804652525291"    "0.0128809113791438"   "-1.08428773118465"   
- [58] "2.56337425172864"     "-1.00739119374467"    "1.52280334997062"    
- [61] "1.09494155814962"     "1.28300732709817"     "-0.228053988205979"  
- [64] "0.705840140134278"    "-0.221371723096351"   "-2.83345308323681"   
- [67] "2.34542009099267"     "0.671548734042737"    "0.241385090812058"   
- [70] "-0.399691196399188"   "-0.126564102858789"   "-0.0764523116853034" 
- [73] "0.114658052888923"    "-1.46731388697303"    "-0.860801668887833"  
- [76] "0.636865296981436"    "-0.835230785973928"   "-0.00660197128972101"
- [79] "-1.42757913251351"    "0.615703174106159"    "1.25686246176179"    
- [82] "2.04788286867522"     "-0.365102311899942"   "-0.29156054345678"   
- [85] "-0.328739121970806"   "-0.499459569351025"   "1.74215093189207"    
- [88] "-0.392889862597083"   "-0.228441223926768"   "0.209441506554265"   
- [91] "-0.360843467721854"   "-0.528273179800158"   "-1.46905487883834"   
- [94] "0.0260253044336563"   "1.25561314649376"     "-1.82433253629423"   
- [97] "0.950828774508699"    "-0.588609726523115"   "1.01556231921237"    
-[100] "0.154325924895837"   
-
-$continua$frequencia
-  -0.611015580815131   -0.101747343110775     0.50563005888218    0.688730224111623 
-                   1                    1                    1                    1 
-   0.108333775647724    -1.82636069640619    0.912962829444157    0.296733295835738 
-                   1                    1                    1                    1 
-   -0.56397633291331     0.78047972021995  -0.0523419011109974    0.728798313242795 
-                   1                    1                    1                    1 
-   0.406898831592171     0.81409098442175    0.994920613294305     0.84474429516057 
-                   1                    1                    1                    1 
-   0.151308865096316    -1.10914916155477    -1.51881836150434   -0.673262372540106 
-                   1                    1                    1                    1 
-  -0.250660578640545   -0.492169014510021     1.22900640446964     1.51159358231646 
-                   1                    1                    1                    1 
-   -1.72270924517278    -1.04142217804179   -0.545638687910345     2.02642881588632 
-                   1                    1                    1                    1 
-  -0.852317079065025    -1.60224977956532    -1.41263655484057    0.287975350755485 
-                   1                    1                    1                    1 
-  0.0859529412914384  -0.0382003245465664     1.85215687405371     1.12047647636474 
-                   1                    1                    1                    1 
-   0.423286270783424    -2.13079946805956     0.87221815466709   -0.483510635019553 
-                   1                    1                    1                    1 
-    -1.0617738856738   -0.683395251404499   -0.576135190643624     0.20104945620515 
-                   1                    1                    1                    1 
-  -0.140825989755349     1.61539674209589   -0.866684654276423     1.00038861812149 
-                   1                    1                    1                    1 
-   -1.49273723536925   -0.102738802111731    -1.00398757318661   -0.161695675096459 
-                   1                    1                    1                    1 
-   -0.70505564655579    -2.31765477300412    0.410804652525291   0.0128809113791438 
-                   1                    1                    1                    1 
-   -1.08428773118465     2.56337425172864    -1.00739119374467     1.52280334997062 
-                   1                    1                    1                    1 
-    1.09494155814962     1.28300732709817   -0.228053988205979    0.705840140134278 
-                   1                    1                    1                    1 
-  -0.221371723096351    -2.83345308323681     2.34542009099267    0.671548734042737 
-                   1                    1                    1                    1 
-   0.241385090812058   -0.399691196399188   -0.126564102858789  -0.0764523116853034 
-                   1                    1                    1                    1 
-   0.114658052888923    -1.46731388697303   -0.860801668887833    0.636865296981436 
-                   1                    1                    1                    1 
-  -0.835230785973928 -0.00660197128972101    -1.42757913251351    0.615703174106159 
-                   1                    1                    1                    1 
-    1.25686246176179     2.04788286867522   -0.365102311899942    -0.29156054345678 
-                   1                    1                    1                    1 
-  -0.328739121970806   -0.499459569351025     1.74215093189207   -0.392889862597083 
-                   1                    1                    1                    1 
-  -0.228441223926768    0.209441506554265   -0.360843467721854   -0.528273179800158 
-                   1                    1                    1                    1 
-   -1.46905487883834   0.0260253044336563     1.25561314649376    -1.82433253629423 
-                   1                    1                    1                    1 
-   0.950828774508699   -0.588609726523115     1.01556231921237    0.154325924895837 
-                   1                    1                    1                    1 
+#calcula as medidas
+medidas<-sumario(dados)
+medidas
 
 
-> 
-> #histograma para as variaveis numericas discretas ou continuas
-> #discreta
-> #dev.new()
-> hist(dados$discreta, freq=F,
-+      main=paste("Histograma de discreta"), 
-+      xlab="valores", ylab="densidade", col="red")
-> 
-> #histograma para as variaveis numericas discretas ou continuas
-> #discreta
-> dev.new()
-NULL
-> hist(dados$discreta, freq=F,
-+      main=paste("Histograma de discreta"), 
-+      xlab="valores", ylab="densidade", col="red")
-> 
-> #adicionar a media e a mediana ao histograma
-> abline(v=medidas$discreta$media, col = "black", lwd = 3)
-> abline(v=medidas$discreta$mediana, col = "black", lwd = 3, lty=5)
-> legend(x = "topright", bg="white",
-+        c("media", "mediana"),
-+        col = c("black", "black"),
-+        lwd = c(3, 3),
-+        lty = c(1, 5))
-> 
-> #continua
-> dev.new()
-NULL
-> hist(dados$continua, freq=F,
-+      main=paste("Histograma de continua"), 
-+      xlab="valores", ylab="densidade", col="red")
-> 
-> #adicionar a media e a mediana ao histograma
-> abline(v=medidas$continua$media, col = "black", lwd = 3)
-> abline(v=medidas$continua$mediana, col = "black", lwd = 3, lty=5)
-> legend(x = "topright", bg="white",
-+        c("media", "mediana"),
-+        col = c("black", "black"),
-+        lwd = c(3, 3),
-+        lty = c(1, 5))
-> 
-> #grafico de barras para as variaveis categoricas nominais ou ordinais
-> #dados de frequencia em medidas
-> #ordinal
-> dev.new()
-NULL
-> barplot(medidas$nominal$frequencia, 
-+         main="Grafico de barras de nominal", 
-+         xlab="valores", ylab="frequencia absoluta", col="red")
-> 
-> #ordinal
-> dev.new()
-NULL
-> barplot(medidas$ordinal$frequencia[order(names(medidas$ordinal$frequencia))], 
-+         main="Grafico de barras de ordinal", 
-+         xlab="valores", ylab="frequencia absoluta", col="red")
+#histograma para as variaveis numericas discretas ou continuas
+#discreta
+#dev.new()
+hist(dados$discreta, freq=F,
+     main=paste("Histograma de discreta"), 
+     xlab="valores", ylab="densidade", col="red")
+
+#histograma para as variaveis numericas discretas ou continuas
+#discreta
+dev.new()
+hist(dados$discreta, freq=F,
+     main=paste("Histograma de discreta"), 
+     xlab="valores", ylab="densidade", col="red")
+
+#adicionar a media e a mediana ao histograma
+abline(v=medidas$discreta$media, col = "black", lwd = 3)
+abline(v=medidas$discreta$mediana, col = "black", lwd = 3, lty=5)
+legend(x = "topright", bg="white",
+       c("media", "mediana"),
+       col = c("black", "black"),
+       lwd = c(3, 3),
+       lty = c(1, 5))
+
+#continua
+dev.new()
+hist(dados$continua, freq=F,
+     main=paste("Histograma de continua"), 
+     xlab="valores", ylab="densidade", col="red")
+
+#adicionar a media e a mediana ao histograma
+abline(v=medidas$continua$media, col = "black", lwd = 3)
+abline(v=medidas$continua$mediana, col = "black", lwd = 3, lty=5)
+legend(x = "topright", bg="white",
+       c("media", "mediana"),
+       col = c("black", "black"),
+       lwd = c(3, 3),
+       lty = c(1, 5))
+
+#grafico de barras para as variaveis categoricas nominais ou ordinais
+#dados de frequencia em medidas
+#ordinal
+dev.new()
+barplot(medidas$nominal$frequencia, 
+        main="Grafico de barras de nominal", 
+        xlab="valores", ylab="frequencia absoluta", col="red")
+
+#ordinal
+dev.new()
+barplot(medidas$ordinal$frequencia[order(names(medidas$ordinal$frequencia))], 
+        main="Grafico de barras de ordinal", 
+        xlab="valores", ylab="frequencia absoluta", col="red")
