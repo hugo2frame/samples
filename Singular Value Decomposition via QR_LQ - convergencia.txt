@@ -1,0 +1,35 @@
+
+#################################################################################
+########################### 3a Versao - Simplificada ############################
+#################################################################################
+
+gera<-function(l, c, n, s){
+#l eh o numero de linhas da matriz
+#c eh o numero de colunas da matriz
+#n eh o numero de iteracoes
+#s eh o tamanho da amostra
+	iteracao<-function(D){
+	#D eh a matriz da vez
+		iter<-function(){
+			D<<-t(qr.R(qr(t(qr.R(qr(D))))))
+			return(sqrt(sum((sort(abs(diag(D)), decreasing=T)-z)^2))/nz)
+		}
+		z<-svd(D)$d
+		nz<-sqrt(sum(z^2))
+		return(sapply(1:n, function(l) iter()))
+	}
+	return(sapply(1:s,function(k) iteracao(matrix(rnorm(l*c, 0, 100), ncol=c))))
+}
+
+system.time(
+	conv<-gera(l<-300, c<-20, n<-1000, s<-1000)
+)
+
+dev.new()
+matplot(rep(0.0001,1000), type="l", log="y", ylim=c(min(conv),max(conv)), 
+	xlab="Iteracao", ylab="Distancia relativa")
+matlines(conv, lwd=0.01, lty=1, col="red")
+matlines(rep(0.0001,1000), lwd=2, lty=1, col="black")
+
+
+
