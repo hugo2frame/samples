@@ -1,0 +1,1362 @@
+\RequirePackage[l2tabu, orthodox]{nag}
+
+\documentclass{report}
+
+\usepackage{amsmath}
+\usepackage[letterpaper,hmargin={1cm,1cm}]{geometry}
+\usepackage[bottom]{footmisc}
+\usepackage{graphicx}
+\usepackage{microtype}
+\usepackage{siunitx}
+\usepackage{cleveref}
+\usepackage[colorlinks=false, pdfborder={0 0 0}]{hyperref}
+\usepackage{booktabs}
+\usepackage{placeins}
+\usepackage{rotating}
+\usepackage{tabularx}
+\usepackage{longtable}
+\usepackage{rotating}
+
+\usepackage{fancyhdr}
+\usepackage{blindtext}   % to be dropped in the real document
+\fancyhf{}
+\fancyheadoffset[R]{0.5cm}
+\rhead{\leavevmode\smash{\raisebox{1cm}{\thepage}}}
+\lhead{\rightmark}
+\renewcommand{\headrulewidth}{0pt}
+\pagestyle{fancy}
+
+
+\begin{document}
+<<Configuracao_Global,echo=FALSE, warning=FALSE, error=FALSE, message=FALSE>>=
+opts_chunk$set(echo=FALSE,warning=FALSE,error=FALSE,message=FALSE,comment=NA,background="white")
+@
+\title{Analise Exploratoria\\ Projeto Anonimo1 - Anonimo2}
+\author{\textit {2frame} Analytics}
+\date{\today}
+\maketitle
+
+<<Bibliotecas>>=
+library(Rcmdr)
+library(car)
+library(class)
+library(abind)
+library(nnet)
+library(MASS)
+library(pander)
+library(descr)
+library(relimp)
+library(grid)
+library(mvtnorm)
+library(e1071)
+library(Hmisc)
+#library(MIfuns)
+library(memisc)
+library(lattice)
+library(foreign)
+library(cluster)
+library(rpart)
+library(knitr)
+library(FactoMineR)
+library(igraph)
+library(xtable)
+library(reporttools)
+library(graphics)
+library(reshape)
+library(lme4)
+library(nlme)
+library(latticeExtra)
+library(Deducer)
+library(coin)
+library(gplots)
+library(ggplot2)
+library(grid)
+library(reshape2)
+@
+
+<<Importa_Arquivos>>=
+Anonimo1 <- read.table("//ZEUS-PC/Users/Public/Statistics/2frame/clients/Anonimo2 - HC/Anonimo1/tabelas enviadas em 03112013/Sumario Final Anonimo1.csv", header=TRUE, sep=",", na.strings="N/A", dec=".", strip.white=TRUE)
+Variaveis <- read.table("//ZEUS-PC/Users/Public/Statistics/2frame/clients/Anonimo2 - HC/Anonimo1/tabelas enviadas em 03112013/folha de variaveis e legendas.csv", header=TRUE, sep=",", na.strings="N/A", dec=".", strip.white=TRUE)
+@
+%Nao ha output
+<<Variaveis_Extras>>=
+Anonimo1$FlgAV_T4<-with(Anonimo1,pmax(FlgAV_m1_T4,FlgAV_m2_T4,FlgAV_m3_T4))
+Anonimo1$FlabAV_T4<-with(Anonimo1,pmax(FlabAV_m1_T4,FlabAV_m2_T4,FlabAV_m3_T4))
+Anonimo1$FbocAV_T4<-with(Anonimo1,pmax(FbocAV_m1_T4,FbocAV_m2_T4,FbocAV_m3_T4))
+
+Anonimo1$FlgGTT_T4<-with(Anonimo1,pmax(FlgGTT_m1_T4,FlgGTT_m2_T4,FlgGTT_m3_T4))
+Anonimo1$FlabGTT_T4<-with(Anonimo1,pmax(FlabGTT_m1_T4,FlabGTT_m2_T4,FlabGTT_m3_T4))
+Anonimo1$FbocGTT_T4<-with(Anonimo1,pmax(FbocGTT_m1_T4,FbocGTT_m2_T4,FbocGTT_m3_T4))
+
+Anonimo1$N <- as.factor(Anonimo1$N)
+
+Anonimo1$X1osint_T1 <- factor(Anonimo1$X1osint_T1, levels=c('Bulbar','Membros'))
+
+Anonimo1$G_T1 <- factor(Anonimo1$G_T1, levels=c('Feminino','Masculino'))
+
+Anonimo1$Introducao2_NO <- with(Anonimo1,pmax(-3,Introducao_NO))
+Anonimo1$F.Introducao2_NO <- as.factor(Anonimo1$Introducao2_NO)
+
+Anonimo1$DifFlg_NO <- with(Anonimo1,FlgGTT_T4-FlgAV_T4)
+Anonimo1$DifFlab_NO <- with(Anonimo1,FlabGTT_T4-FlabAV_T4)
+Anonimo1$DifFboc_NO <- with(Anonimo1,FbocGTT_T4-FbocAV_T4)
+
+Anonimo1$IMCnumaval_NO <- with(Anonimo1,Paval_T1/(Alt_T1^2))
+Anonimo1$IMCnumGTT_NO <- with(Anonimo1,PGTT_NO/(Alt_T1^2))
+Anonimo1$DifIMC_NO <- with(Anonimo1,IMCnumGTT_NO-IMCnumaval_NO)
+
+Anonimo1$F.Id_T1 <- bin.var(Anonimo1$Id_T1, bins=3, method='natural', labels=c('Baixa',
+  'Media','Alta'))
+Anonimo1$F.Escol_T1 <- bin.var(Anonimo1$Escol_T1, bins=3, method='natural', 
+  labels=c('Baixa','Media','Alta'))
+
+Anonimo1$DifASHA_NO <- with(Anonimo1,ASHA_GTT_T4-ASHA_Aval_T4)
+Anonimo1$DifALSFRS_NO <- with(Anonimo1,ALSFRS_GTT_T4-ALSFRS_Aval_T4)
+Anonimo1$DifT_reslg_NO <- with(Anonimo1,T_reslgGTT_T4-T_reslgAV_T4)
+
+Anonimo1$DifFlg_NO_R <- with(Anonimo1,DifFlg_NO/pmax(1,-Introducao_NO))
+Anonimo1$DifFlab_NO_R <- with(Anonimo1,DifFlab_NO/pmax(1,-Introducao_NO))
+Anonimo1$DifFboc_NO_R <- with(Anonimo1,DifFboc_NO/pmax(1,-Introducao_NO))
+Anonimo1$DifIMC_NO_R <- with(Anonimo1,DifIMC_NO/pmax(1,-Introducao_NO))
+Anonimo1$DifASHA_NO_R <- with(Anonimo1,DifASHA_NO/pmax(1,-Introducao_NO))
+Anonimo1$DifALSFRS_NO_R <- with(Anonimo1,DifALSFRS_NO/pmax(1,-Introducao_NO))
+Anonimo1$DifT_reslg_NO_R <- with(Anonimo1,DifT_reslg_NO/pmax(1,-Introducao_NO))
+@
+\newpage
+\section*{Introducao}
+A abordagem adotada para o trabalho que segue abaixo procura atender o objetivo determinado na proposta
+
+\begin{quote}
+\textit {explorar as relacoes entre o comportamento da forca de lingua, e o eventual encaminhamento para a sonda, enriquecendo a analise com o uso das multiplas metricas presentes nas bases de dados para a amostra disponivel de pacientes.}
+\end{quote}
+
+\newline
+\newline
+Na primeira secao, \textbf{Descritivas das Variaveis}, segue o diagnostico de missing, e uma sequencia de tabelas contendo frequencias absolutas e relativas por nivel das variaveis categoricas, e medidas-resumo como quartis, media, desvio padrao, entre outras, para as variaveis numericas. Essas tabelas contem essas informacoes para essas variaveis nao-agrupadas e agrupadas pelos fatores Genero, Faixa de Idade, Primeiro Sintoma e Tempo de Espera. Para as variaveis numericas, sao exibidos os p-valores para os testes nao parametrico de comparacao de medianas entre os grupos (Kruskal-Wallis se ha mais de dois grupos, e Wilcoxon-Mann-Whitney se ha somente dois grupos), e para as variaveis categoricas, tem-se os testes de independencia contra os fatores de agrupamento.
+\newline
+\newline
+Na secao \textbf{Medidas Pareadas - Testes}, sao feitos testes pareados nao-parametricos, para as metricas que apresentam medidas repetidas para cada paciente, agrupados por Primeiro Sintoma. As tabelas contem as estatisticas e p-valores exatos ao inves de aproximacoes normais ou assintoticas. Esses testes mostram, de forma robusta, se essas metricas decaem (ou nao) entre o instante da primeira avaliacao e do encaminhamento para o GTT. A limitacao da abordagem decorre do tipo de questao que esses testes respondem, que consiste em dizer se houve ou nao reducao significativa (binaria). Esses testes nao dizem quando a queda, no caso de ser significativa, acontece, ou se a queda eh subita, ou gradual e acumulativa ao longo do tempo (i.e. magnitude da queda eh relacionada ao tempo de espera). Os testes nao parametricos de comparacao de medianas entre os grupos (Kruskal-Wallis) nas tabelas de descritivas para as variaveis numericas (incluidas as Difxxx e Difxxx\_R) agrupadas por tempo de espera na secao \textbf{Descritivas das Variaveis} procuram fornecer evidencias sobre essas questoes. Para exemplificar o problema, se a queda acontecesse subitamente na transicao entre o instante $-1$ e o instante $0$ em relacao ao encaminhamento para o GTT, ainda que a metrica indicasse o encaminhamento para a sonda, nao se prestaria ao objetivo de adiantar em certos casos o encaminhamento para o GTT. 
+\newline
+\newline
+Apesar de fora do escopo deste trabalho, na secao \textbf{Graficos e Modelos Basicos}, os dados de forca de lingua, labio e bochecha, para os momentos da primeira avaliacao e do encaminhamento para o GTT, sao introdutoriamente analisados via modelos lineares (as saidas detalhadas se encontram na secao \textbf{Informacoes Adicionais}, subsecao \textbf{Modelos - Detalhes}), obtendo-se mais evidencias sobre a informatividade das medidas de forca. 
+\newline
+\newline
+A tabela das variaveis usadas no estudo, com siglas, descricao da variavel, descricao do conteudo e seus rotulos, segue no final do relatorio, na secao \textbf{Informacoes Adicionais}, subsecao \textbf{Informacoes das Variaveis Usadas no Relatorio}.
+\newline
+\newline
+Nas analises pode haver certa redundancia de resultados, principalmente em relacao a resultados que sao conhecidos e comprovados pela literatura da area. Porem, na nossa filosofia de trabalho essa redundancia nao so nao atrapalha, como permite uma avaliacao geral atraves desses resultados quanto a anomalias na amostra de dados. Se essas anomalias constituissem fatos novos e contrassensuais em relacao aa literatura da area, seriam achados de valor para a area. Contudo, o mais provavel eh que constituissem problemas de amostragem, o que as tornariam achados de valor para o trabalho em vista.
+\newline
+\newline
+Para as analises realizadas foi utilizado o software estatistico R, versao 3.0.1 (de 16/05/2013).
+\newline
+\newline
+\newline
+Com as analises acima, a equipe da \textit{\textbf{2frame}} espera que os objetivos estabelecidos para o projeto tenham sido alcancados.
+
+
+\newpage
+\section*{Descritivas das Variaveis}
+
+Nesta secao, alem das tabelas que contem as variaveis que satisfazem o maximo de 5\% de missing classificadas por tipo, as seguintes estao estruturadas da seguinte forma:
+\begin{itemize}
+  \item Descritivas basicas para variaveis categoricas, por um fator de agrupamento;
+  \item Testes de Independencia das categoricas em relacao ao fator de agrupamento. Esses sao os testes que caracterizam os cruzamentos da tabela anterior;
+  \item Descritivas basicas para as variaveis numericas, por um fator de agrupamento, com o p-valor do teste nao parametrico de comparacao de medianas entre os grupos (Kruskal-Wallis se ha mais de dois grupos, e Wilcoxon-Mann-Whitney se ha somente dois grupos) cuja hipotese nula eh a igualdade das medianas entre os grupos, e a hipotese alternativa eh a existencia de ao menos um par de grupos com medianas diferentes;
+  \item Descritivas basicas para as variaveis numericas Difxxx e Difxxx\_R\footnote{Essas variaveis pressupoe medidas repetidas, o que leva aa exclusao dos pacientes em que a primeira avaliacao coincide com a avaliacao do encaminhamento para o GTT.}, por um fator de agrupamento, segundo os mesmos testes utilizados para as variaveis numericas (ver acima);
+\end{itemize}
+onde os fatores de agrupamento sao:
+\begin{itemize}
+  \item Genero;
+  \item Faixa de Idade;
+  \item Primeiro Sintoma;
+  \item Tempo de Espera.
+\end{itemize}
+Nessas tabelas, \textbf{somente os resultados com p-valores inferiores a 10\% sao exibidos.}
+\newpage
+<<Missing,results='asis'>>=
+#tirei 2, 7, 8, 10, 96
+var.num<-c(4,6,12,13,15,16,24,25,26,27,73,77,81,82,86,90,94,95,101,102)
+var.num.dif<-c(98,99,100,103,106,107,108)
+var.num.dif.r<-c(109,110,111,112,113,114,115)
+var.num.difr<-c(var.num.dif,var.num.dif.r)
+var.cat<-c(3,5,9,11,14,17,18,19,20,21,22,23,28:69,97,104,105)
+var<-union(var.num,union(var.num.dif,union(var.num.dif.r,var.cat)))
+aux<-colSums(is.na(Anonimo1[,var]))
+ok<-names(Anonimo1)[var[aux<=2]]
+nok<-names(Anonimo1)[var[aux>2]]
+lok<-length(ok)
+lnok<-length(nok)
+length(ok)<-max(lok,lnok)
+length(nok)<-max(lok,lnok)
+tabela<-data.frame(ok,nok,stringsAsFactors=F)
+names(tabela)<-c("Ate 5% de missing","Acima de 5% de missing")
+#print(xtable(tabela,caption="Diagnostico de Missing"),tabular.environment="longtable",floating=FALSE,include.rownames=F,NA.string="-")
+var.cat<-var.cat[colSums(is.na(Anonimo1[,var.cat]))<=2]
+var.num<-var.num[colSums(is.na(Anonimo1[,var.num]))<=2]
+var.num.dif<-var.num.dif[colSums(is.na(Anonimo1[,var.num.dif]))<=2]
+var.num.dif.r<-var.num.dif.r[colSums(is.na(Anonimo1[,var.num.dif.r]))<=2]
+var.num.difr<-var.num.difr[colSums(is.na(Anonimo1[,var.num.difr]))<=2]
+@
+\newpage
+Lista das variaveis que fazem parte do estudo
+\newpage
+<<MissingCat,results='asis'>>=
+tabela<-data.frame(c(names(Anonimo1)[var.cat]),
+                   stringsAsFactors=F
+                   )
+names(tabela)<-c("Variavel")
+print(xtable(tabela,caption="Variaveis categoricas com ate 5\\% de missing"),tabular.environment="longtable",floating=FALSE,include.rownames=F,NA.string="-")
+@
+\newpage
+<<MissingNum,results='asis'>>=
+tabela<-data.frame(c(names(Anonimo1)[var.num]),
+                   stringsAsFactors=F
+                   )
+names(tabela)<-c("Variavel")
+print(xtable(tabela,caption="Variaveis numericas com ate 5\\% de missing"),tabular.environment="longtable",floating=FALSE,include.rownames=F,NA.string="-")
+@
+\newpage
+<<MissingNumDif,results='asis'>>=
+tabela<-data.frame(c(names(Anonimo1)[var.num.dif]),
+                   stringsAsFactors=F
+                   )
+names(tabela)<-c("Variavel")
+print(xtable(tabela,caption="Variaveis numericas do tipo diferencas com ate 5\\% de missing"),tabular.environment="longtable",floating=FALSE,include.rownames=F,NA.string="-")
+@
+\newpage
+<<MissingNumTax,results='asis'>>=
+tabela<-data.frame(c(names(Anonimo1)[var.num.dif.r]),
+                   stringsAsFactors=F
+                   )
+names(tabela)<-c("Variavel")
+print(xtable(tabela,caption="Variaveis numericas do tipo taxas com ate 5\\% de missing"),tabular.environment="longtable",floating=FALSE,include.rownames=F,NA.string="-")
+@
+
+%----------------> GENERO
+%----------------> GENERO
+%----------------> GENERO
+%----------------> GENERO
+%----------------> GENERO
+%----------------> GENERO
+%----------------> GENERO
+%----------------> GENERO
+%----------------> GENERO
+%----------------> GENERO
+\newpage
+Na Tabela de Descritivas das variaveis categoricas agrupadas por genero, as metricas usadas sao:
+\begin{itemize}
+  \item Levels - niveis das variaveis
+  \item n - contagem (pra cada nivel e para o total) dos casos validos (excluindo os missings)
+  \item \% - percentual do total dos casos validos (para cada nivel)
+\end{itemize}
+\newpage
+<<DescritivasCatGrupG,results="asis">>=
+
+
+tabela <- data.frame(V1=character(0),V2=numeric(0),V3=integer(0),V4=numeric(0),stringsAsFactors = FALSE,row.names = NULL)
+for (n in 1:length(var.cat)) {
+  if(names(Anonimo1)[var.cat[n]]!="G_T1"){
+    twoTabl<-xtabs(formula(paste("~",names(Anonimo1)[var.cat[n]],"+G_T1")),data = Anonimo1)
+    result<-likelihood.test(twoTabl)
+    aux<-data.frame(names(Anonimo1)[var.cat[n]], result$statistic, as.integer(result$parameter), result$p.value,stringsAsFactors = FALSE,row.names = NULL)
+		tabela <- rbind(tabela,aux)
+  }
+}
+
+colnames(tabela) <- c("Variavel","LogLike","G.l.","P-valor")
+
+var.cat.g<-tabela[tabela[,4]<0.1,1]
+
+tableNominal(Anonimo1[,var.cat.g],cap="Tabela de Descritivas - categoricas por genero",group=Anonimo1$G_T1,longtable=T,cumsum=F)
+@
+\newpage
+Na Tabela de Testes G de Independencia, as metricas usadas sao:
+\begin{itemize}
+  \item Variavel: variavel testada contra genero
+  \item LogLike: razao de verossimilhanca calculada para o teste
+  \item G.l.: graus de liberdade do teste
+  \item P-valor: p-valor sob a hipotese nula de independencia entre as variaveis
+\end{itemize}
+\newpage
+<<IndG,results="asis">>=
+
+aux<-xtable(tabela[is.element(tabela[,1],var.cat.g),],caption="Tabela de Testes G de Independencia - categoricas contra genero")
+aux<-aux[order(aux[,4]),]
+print(aux,tabular.environment="longtable",floating=FALSE,include.rownames=F,NA.string="-")
+@
+\newpage
+Na Tabela de Descritivas das variaveis numericas agrupadas por genero, as metricas usadas sao:
+\begin{itemize}
+  \item n - contagem dos pacientes sem missing nessa variavel
+  \item Min - o minimo dos valores dessa variavel
+  \item $q_1$ - $1^o$ quartil (25\%)
+  \item $\tilde{x}$ - mediana ($2^o$ quartil - 50\%)
+  \item $\overline{x}$ - media
+  \item $q_3$ - $3^o$ quartil (75\%)
+  \item Maximo - o maximo dos valores dessa variavel
+  \item s - desvio padrao amostral
+  \item IQR - intervalo interquartilico $(q_3 - q_1)$
+  \item \#NA - contagem dos missings 
+\end{itemize}
+\newpage
+
+<<DescritivasNumGrupG,fig.height=6,fig.width=6,fig.align='center',results="asis">>=
+var.par<-c("FlgAV_T4","FlgGTT_T4","FlabAV_T4","FlabGTT_T4","FbocAV_T4","FbocGTT_T4","ASHA_Aval_T4","ASHA_GTT_T4","ALSFRS_Aval_T4","ALSFRS_GTT_T4","T_reslgAV_T4","T_reslgGTT_T4","IMCnumaval_NO","IMCnumGTT_NO")
+
+nVar<-0
+Variavel<-vector()
+Valor<-vector()
+var.num.g<-vector()
+for(v in var.num){
+  if(wilcox.test(Anonimo1[,v]~Anonimo1$G_T1,correct=F)$p.value<0.1){
+    var.num.g<-c(var.num.g,v)
+    if(is.element(names(Anonimo1)[v],var.par)){
+      nVar<-nVar+1
+      Variavel<-c(Variavel,rep(names(Anonimo1)[v],length(Anonimo1$G_T1)))
+      Valor<-c(Valor,Anonimo1[,v])
+    }
+  }
+}
+if(nVar>0){
+  tt<-data.frame(Variavel,Valor,Agrupamento=rep(Anonimo1$G_T1,nVar))
+  ptt<-ggplot(tt,aes(x=Agrupamento,y=Valor))+
+    geom_boxplot(aes(fill=Agrupamento),notch=T,notchwidth=1.25)+
+    guides(fill=FALSE)+
+    xlab("")+ylab("")+
+    ggtitle("Comparacao de Medianas por Genero\n")+
+    theme_bw()+
+    facet_wrap(~Variavel,scales="free",ncol=2)
+  print(ptt,tabular.environment="longtable",floating=FALSE,include.rownames=F,NA.string="-",more=T)
+}
+@
+\newpage
+<<tDescritivasNumGrupG,results="asis">>=
+tableContinuous(Anonimo1[,var.num.g],cap="Tabela de Descritivas - numericas por genero",group=Anonimo1$G_T1,print.pval="kruskal",longtable=T)
+@
+
+\newpage
+<<DescritivasNumGrupGDif,fig.height=6,fig.width=6,fig.align='center',results="asis">>=
+var.par2<-c("DifFlg_NO","DifFlab_NO","DifFboc_NO","DifASHA_NO","DifALSFRS_NO","DifT_reslg_NO","DifIMC_NO","DifFlg_NO_R","DifFlab_NO_R","DifFboc_NO_R","DifASHA_NO_R","DifALSFRS_NO_R","DifT_reslg_NO_R","DifIMC_NO_R")
+
+nVar<-0
+Variavel<-vector()
+Valor<-vector()
+var.num.difr.g<-vector()
+for(v in var.num.difr){
+  if(wilcox.test(Anonimo1[,v]~Anonimo1$G_T1,correct=F,subset=Anonimo1$F.Introducao2_NO!=0)$p.value<0.1){
+    var.num.difr.g<-c(var.num.difr.g,v)
+    if(is.element(names(Anonimo1)[v],var.par2)){
+      nVar<-nVar+1
+      Variavel<-c(Variavel,rep(names(Anonimo1)[v],length(Anonimo1$G_T1[Anonimo1$F.Introducao2_NO!=0])))
+      Valor<-c(Valor,Anonimo1[Anonimo1$F.Introducao2_NO!=0,v])
+    }
+  }
+}
+if(nVar>0){
+  tt<-data.frame(Variavel,Valor,Agrupamento=rep(Anonimo1$G_T1[Anonimo1$F.Introducao2_NO!=0],nVar))
+  ptt<-ggplot(tt,aes(x=Agrupamento,y=Valor))+
+    geom_boxplot(aes(fill=Agrupamento),notch=T,notchwidth=1.25)+
+    guides(fill=FALSE)+
+    xlab("")+ylab("")+
+    ggtitle("Comparacao de Medianas por Genero\n")+
+    theme_bw()+
+    facet_wrap(~Variavel,scales="free",ncol=2)
+  print(ptt,tabular.environment="longtable",floating=FALSE,include.rownames=F,NA.string="-",more=T)
+}
+
+
+@
+\newpage
+<<tDescritivasNumGrupGDif,results="asis">>=
+if(length(var.num.difr.g)>0){
+  tableContinuous(Anonimo1[,var.num.difr.g],cap="Tabela de Descritivas - numericas por genero - diferencas e taxas",group=Anonimo1$G_T1,print.pval="kruskal",longtable=T,subset=Anonimo1$F.Introducao2_NO!=0)
+} else{
+  cat("Tabela de Descritivas - numericas por genero - diferencas e taxas : vazia")
+}
+@
+
+
+%----------------> FAIXA DE IDADE
+%----------------> FAIXA DE IDADE
+%----------------> FAIXA DE IDADE
+%----------------> FAIXA DE IDADE
+%----------------> FAIXA DE IDADE
+%----------------> FAIXA DE IDADE
+%----------------> FAIXA DE IDADE
+%----------------> FAIXA DE IDADE
+%----------------> FAIXA DE IDADE
+%----------------> FAIXA DE IDADE
+\newpage
+Na Tabela de Descritivas das variaveis categoricas agrupadas por faixa de idade, as metricas usadas sao:
+\begin{itemize}
+  \item Levels - niveis das variaveis
+  \item n - contagem (pra cada nivel e para o total) dos casos validos (excluindo os missings)
+  \item \% - percentual do total dos casos validos (para cada nivel)
+\end{itemize}
+\newpage
+<<DescritivasCatGrupFId,results="asis">>=
+tabela <- data.frame(V1=character(0),V2=numeric(0),V3=integer(0),V4=numeric(0),stringsAsFactors = FALSE,row.names = NULL)
+for (n in 1:length(var.cat)) {
+  if(names(Anonimo1)[var.cat[n]]!="F.Id_T1"){
+    twoTabl<-xtabs(formula(paste("~",names(Anonimo1)[var.cat[n]],"+F.Id_T1")),data = Anonimo1)
+    result<-likelihood.test(twoTabl)
+    aux<-data.frame(names(Anonimo1)[var.cat[n]], result$statistic, as.integer(result$parameter), result$p.value,stringsAsFactors = FALSE,row.names = NULL)
+  	tabela <- rbind(tabela,aux)
+  }
+}
+
+colnames(tabela) <- c("Variavel","LogLike","G.l.","P-valor")
+
+var.cat.i<-tabela[tabela[,4]<0.1,1]
+
+tableNominal(Anonimo1[,var.cat.i],cap="Tabela de Descritivas - categoricas por faixa de idade",group=Anonimo1$F.Id_T1,longtable=T,cumsum=F)
+@
+\newpage
+Na Tabela de Testes G de Independencia, as metricas usadas sao:
+\begin{itemize}
+  \item Variavel: variavel testada contra faixa de idade
+  \item LogLike: razao de verossimilhanca calculada para o teste
+  \item G.l.: graus de liberdade do teste
+  \item P-valor: p-valor sob a hipotese nula de independencia entre as variaveis
+\end{itemize}
+\newpage
+<<IndFId,results="asis">>=
+
+
+
+aux<-xtable(tabela[is.element(tabela[,1],var.cat.i),],caption="Tabela de Testes G de Independencia - categoricas contra faixa de idade")
+aux<-aux[order(aux[,4]),]
+print(aux,tabular.environment="longtable",floating=FALSE,include.rownames=F,NA.string="-")
+@
+\newpage
+Na Tabela de Descritivas das variaveis numericas agrupadas por faixa de idade, as metricas usadas sao:
+\begin{itemize}
+  \item n - contagem dos pacientes sem missing nessa variavel
+  \item Min - o minimo dos valores dessa variavel
+  \item $q_1$ - $1^o$ quartil (25\%)
+  \item $\tilde{x}$ - mediana ($2^o$ quartil - 50\%)
+  \item $\overline{x}$ - media
+  \item $q_3$ - $3^o$ quartil (75\%)
+  \item Maximo - o maximo dos valores dessa variavel
+  \item s - desvio padrao amostral
+  \item IQR - intervalo interquartilico $(q_3 - q_1)$
+  \item \#NA - contagem dos missings 
+\end{itemize}
+\newpage
+
+<<DescritivasNumGrupFId,fig.height=6,fig.width=6,fig.align='center',results="asis">>=
+nVar<-0
+Variavel<-vector()
+Valor<-vector()
+var.num.i<-vector()
+for(v in var.num){
+  if(kruskal.test(Anonimo1[,v]~Anonimo1$F.Id_T1)$p.value<0.1){
+    var.num.i<-c(var.num.i,v)
+    if(is.element(names(Anonimo1)[v],var.par)){
+      nVar<-nVar+1
+      Variavel<-c(Variavel,rep(names(Anonimo1)[v],length(Anonimo1$F.Id_T1)))
+      Valor<-c(Valor,Anonimo1[,v])
+    }
+  }
+}
+if(nVar>0){
+  tt<-data.frame(Variavel,Valor,Agrupamento=rep(Anonimo1$F.Id_T1,nVar))
+  ptt<-ggplot(tt,aes(x=Agrupamento,y=Valor))+
+    geom_boxplot(aes(fill=Agrupamento),notch=T,notchwidth=1.25)+
+    guides(fill=FALSE)+
+    xlab("")+ylab("")+
+    ggtitle("Comparacao de Medianas por Faixa Etaria\n")+
+    theme_bw()+
+    facet_wrap(~Variavel,scales="free",ncol=2)
+  print(ptt,tabular.environment="longtable",floating=FALSE,include.rownames=F,NA.string="-",more=T)
+}
+
+@
+\newpage
+<<tDescritivasNumGrupFId,results="asis">>=
+
+if(length(var.num.i)>0){
+  tableContinuous(Anonimo1[,var.num.i],cap="Tabela de Descritivas - numericas por faixa de idade",group=Anonimo1$F.Id_T1,print.pval="kruskal",longtable=T)
+} else{
+  cat("Tabela de Descritivas - numericas por faixa de idade : vazia")
+}
+@
+
+\newpage
+<<DescritivasNumGrupFIdDif,fig.height=6,fig.width=6,fig.align='center',results="asis">>=
+nVar<-0
+Variavel<-vector()
+Valor<-vector()
+var.num.difr.i<-vector()
+for(v in var.num.difr){
+  if(kruskal.test(Anonimo1[,v]~Anonimo1$F.Id_T1,subset=Anonimo1$F.Introducao2_NO!=0)$p.value<0.1){
+    var.num.difr.i<-c(var.num.difr.i,v)
+    if(is.element(names(Anonimo1)[v],var.par2)){
+      nVar<-nVar+1
+      Variavel<-c(Variavel,rep(names(Anonimo1)[v],length(Anonimo1$F.Id_T1[Anonimo1$F.Introducao2_NO!=0])))
+      Valor<-c(Valor,Anonimo1[Anonimo1$F.Introducao2_NO!=0,v])
+    }
+  }
+}
+if(nVar>0){
+  tt<-data.frame(Variavel,Valor,Agrupamento=rep(Anonimo1$F.Id_T1[Anonimo1$F.Introducao2_NO!=0],nVar))
+  ptt<-ggplot(tt,aes(x=Agrupamento,y=Valor))+
+    geom_boxplot(aes(fill=Agrupamento),notch=T,notchwidth=1.25)+
+    guides(fill=FALSE)+
+    xlab("")+ylab("")+
+    ggtitle("Comparacao de Medianas por Faixa Etaria\n")+
+    theme_bw()+
+    facet_wrap(~Variavel,scales="free",ncol=2)
+  print(ptt,tabular.environment="longtable",floating=FALSE,include.rownames=F,NA.string="-",more=T)
+}
+
+@
+\newpage
+<<tDescritivasNumGrupFIdDif,results="asis">>=
+
+if(length(var.num.difr.i)>0){
+  tableContinuous(Anonimo1[,var.num.difr.i],cap="Tabela de Descritivas - numericas por faixa de idade - diferencas e taxas",group=Anonimo1$F.Id_T1,print.pval="kruskal",longtable=T,subset=Anonimo1$F.Introducao2_NO!=0)
+} else{
+  cat("Tabela de Descritivas - numericas por faixa de idade - diferencas e taxas : vazia")
+}
+@
+
+
+%----------------> PRIMEIRO SINTOMA
+%----------------> PRIMEIRO SINTOMA
+%----------------> PRIMEIRO SINTOMA
+%----------------> PRIMEIRO SINTOMA
+%----------------> PRIMEIRO SINTOMA
+%----------------> PRIMEIRO SINTOMA
+%----------------> PRIMEIRO SINTOMA
+%----------------> PRIMEIRO SINTOMA
+%----------------> PRIMEIRO SINTOMA
+%----------------> PRIMEIRO SINTOMA
+\newpage
+Na Tabela de Descritivas das variaveis categoricas agrupadas por primeiro sintoma, as metricas usadas sao:
+\begin{itemize}
+  \item Levels - niveis das variaveis
+  \item n - contagem (pra cada nivel e para o total) dos casos validos (excluindo os missings)
+  \item \% - percentual do total dos casos validos (para cada nivel)
+\end{itemize}
+\newpage
+<<DescritivasCatGrupX1osint,results="asis">>=
+
+tabela <- data.frame(V1=character(0),V2=numeric(0),V3=integer(0),V4=numeric(0),stringsAsFactors = FALSE,row.names = NULL)
+for (n in 1:length(var.cat)) {
+  if(names(Anonimo1)[var.cat[n]]!="X1osint_T1"){
+    twoTabl<-xtabs(formula(paste("~",names(Anonimo1)[var.cat[n]],"+X1osint_T1")),data = Anonimo1)
+    result<-likelihood.test(twoTabl)
+  	aux<-data.frame(names(Anonimo1)[var.cat[n]], result$statistic, as.integer(result$parameter), result$p.value,stringsAsFactors = FALSE,row.names = NULL)
+		tabela <- rbind(tabela,aux)
+  }
+}
+
+colnames(tabela) <- c("Variavel","LogLike","G.l.","P-valor")
+
+var.cat.s<-tabela[tabela[,4]<0.1,1]
+
+tableNominal(Anonimo1[,var.cat.s],cap="Tabela de Descritivas - categoricas por primeiro sintoma",group=Anonimo1$X1osint_T1,longtable=T,cumsum=F)
+@
+\newpage
+Na Tabela de Testes G de Independencia, as metricas usadas sao:
+\begin{itemize}
+  \item Variavel: variavel testada contra primeiro sintoma
+  \item LogLike: razao de verossimilhanca calculada para o teste
+  \item G.l.: graus de liberdade do teste
+  \item P-valor: p-valor sob a hipotese nula de independencia entre as variaveis
+\end{itemize}
+\newpage
+<<IndX1osint,results="asis">>=
+
+
+aux<-xtable(tabela[is.element(tabela[,1],var.cat.s),],caption="Tabela de Testes G de Independencia - categoricas contra primeiro sintoma")
+aux<-aux[order(aux[,4]),]
+print(aux,tabular.environment="longtable",floating=FALSE,include.rownames=F,NA.string="-")
+@
+\newpage
+Na Tabela de Descritivas das variaveis numericas agrupadas por primeiro sintoma, as metricas usadas sao:
+\begin{itemize}
+  \item n - contagem dos pacientes sem missing nessa variavel
+  \item Min - o minimo dos valores dessa variavel
+  \item $q_1$ - $1^o$ quartil (25\%)
+  \item $\tilde{x}$ - mediana ($2^o$ quartil - 50\%)
+  \item $\overline{x}$ - media
+  \item $q_3$ - $3^o$ quartil (75\%)
+  \item Maximo - o maximo dos valores dessa variavel
+  \item s - desvio padrao amostral
+  \item IQR - intervalo interquartilico $(q_3 - q_1)$
+  \item \#NA - contagem dos missings 
+\end{itemize}
+\newpage
+<<DescritivasNumGrupX1osint,fig.height=3.5,fig.width=6,fig.align='center',results="asis">>=
+nVar<-0
+Variavel<-vector()
+Valor<-vector()
+var.num.s<-vector()
+for(v in var.num){
+  if(wilcox.test(Anonimo1[,v]~Anonimo1$X1osint_T1,correct=F)$p.value<0.1){
+    var.num.s<-c(var.num.s,v)
+    if(is.element(names(Anonimo1)[v],var.par)){
+      nVar<-nVar+1
+      Variavel<-c(Variavel,rep(names(Anonimo1)[v],length(Anonimo1$X1osint_T1)))
+      Valor<-c(Valor,Anonimo1[,v])
+    }
+  }
+}
+if(nVar>0){
+  tt<-data.frame(Variavel,Valor,Agrupamento=rep(Anonimo1$X1osint_T1,nVar))
+  ptt<-ggplot(tt,aes(x=Agrupamento,y=Valor))+
+    geom_boxplot(aes(fill=Agrupamento),notch=T,notchwidth=1.25)+
+    guides(fill=FALSE)+
+    xlab("")+ylab("")+
+    ggtitle("Comparacao de Medianas por Primeiro Sintoma\n")+
+    theme_bw()+
+    facet_wrap(~Variavel,scales="free",ncol=2)
+  print(ptt,tabular.environment="longtable",floating=FALSE,include.rownames=F,NA.string="-",more=T)
+}
+
+@
+\newpage
+<<tDescritivasNumGrupX1osint,results="asis">>=
+
+if(length(var.num.s)>0){
+  tableContinuous(Anonimo1[,var.num.s],cap="Tabela de Descritivas - numericas por primeiro sintoma",group=Anonimo1$X1osint_T1,print.pval="kruskal",longtable=T)
+} else{
+  cat("Tabela de Descritivas - numericas por primeiro sintoma : vazia")
+}
+@
+
+\newpage
+<<DescritivasNumGrupX1osintDif,fig.height=3.5,fig.width=6,fig.align='center',results="asis">>=
+nVar<-0
+Variavel<-vector()
+Valor<-vector()
+var.num.difr.s<-vector()
+for(v in var.num.difr){
+  if(wilcox.test(Anonimo1[,v]~Anonimo1$X1osint_T1,correct=F,subset=Anonimo1$F.Introducao2_NO!=0)$p.value<0.1){
+    var.num.difr.s<-c(var.num.difr.s,v)
+    if(is.element(names(Anonimo1)[v],var.par2)){
+      nVar<-nVar+1
+      Variavel<-c(Variavel,rep(names(Anonimo1)[v],length(Anonimo1$X1osint_T1[Anonimo1$F.Introducao2_NO!=0])))
+      Valor<-c(Valor,Anonimo1[Anonimo1$F.Introducao2_NO!=0,v])
+    }
+  }
+}
+if(nVar>0){
+  tt<-data.frame(Variavel,Valor,Agrupamento=rep(Anonimo1$X1osint_T1[Anonimo1$F.Introducao2_NO!=0],nVar))
+  ptt<-ggplot(tt,aes(x=Agrupamento,y=Valor))+
+    geom_boxplot(aes(fill=Agrupamento),notch=T,notchwidth=1.25)+
+    guides(fill=FALSE)+
+    xlab("")+ylab("")+
+    ggtitle("Comparacao de Medianas por Primeiro Sintoma\n")+
+    theme_bw()+
+    facet_wrap(~Variavel,scales="free",ncol=2)
+  print(ptt,tabular.environment="longtable",floating=FALSE,include.rownames=F,NA.string="-",more=T)
+}
+
+@
+\newpage
+<<tDescritivasNumGrupX1osintDif,results="asis">>=
+
+if(length(var.num.difr.s)>0){
+  tableContinuous(Anonimo1[,var.num.difr.s],cap="Tabela de Descritivas - numericas por primeiro sintoma - diferencas e taxas",group=Anonimo1$X1osint_T1,print.pval="kruskal",longtable=T,subset=Anonimo1$F.Introducao2_NO!=0)
+} else{
+  cat("Tabela de Descritivas - numericas por primeiro sintoma - diferencas e taxas : vazia")
+}
+@
+
+
+%----------> TEMPO DE ESPERA
+%----------> TEMPO DE ESPERA
+%----------> TEMPO DE ESPERA
+%----------> TEMPO DE ESPERA
+%----------> TEMPO DE ESPERA
+%----------> TEMPO DE ESPERA
+%----------> TEMPO DE ESPERA
+%----------> TEMPO DE ESPERA
+%----------> TEMPO DE ESPERA
+%----------> TEMPO DE ESPERA
+\newpage
+Na Tabela de Descritivas das variaveis categoricas agrupadas por tempo de espera, as metricas usadas sao:
+\begin{itemize}
+  \item Levels - niveis das variaveis
+  \item n - contagem (pra cada nivel e para o total) dos casos validos (excluindo os missings)
+  \item \% - percentual do total dos casos validos (para cada nivel)
+\end{itemize}
+\newpage
+<<DescritivasCatGrupIntro,results="asis">>=
+tabela <- data.frame(V1=character(0),V2=numeric(0),V3=integer(0),V4=numeric(0),stringsAsFactors = FALSE,row.names = NULL)
+for (n in 1:length(var.cat)) {
+  if(names(Anonimo1)[var.cat[n]]!="F.Introducao2_NO"){
+    twoTabl<-xtabs(formula(paste("~",names(Anonimo1)[var.cat[n]],"+F.Introducao2_NO")),data = Anonimo1)
+    result<-likelihood.test(twoTabl)
+  	aux<-data.frame(names(Anonimo1)[var.cat[n]], result$statistic, as.integer(result$parameter), result$p.value,stringsAsFactors = FALSE,row.names = NULL)
+		tabela <- rbind(tabela,aux)
+  }
+}
+
+colnames(tabela) <- c("Variavel","LogLike","G.l.","P-valor")
+
+var.cat.t<-tabela[tabela[,4]<0.1,1]
+
+tableNominal(Anonimo1[,var.cat.t],cap="Tabela de Descritivas - categoricas por tempo de espera",group=Anonimo1$F.Introducao2_NO,longtable=T,cumsum=F)
+@
+
+\newpage
+Na Tabela de Testes G de Independencia, as metricas usadas sao:
+\begin{itemize}
+  \item Variavel: variavel testada contra tempo de espera
+  \item LogLike: razao de verossimilhanca calculada para o teste
+  \item G.l.: graus de liberdade do teste
+  \item P-valor: p-valor sob a hipotese nula de independencia entre as variaveis
+\end{itemize}
+\newpage
+<<IndFIntro,results="asis">>=
+
+aux<-xtable(tabela[is.element(tabela[,1],var.cat.t),],caption="Tabela de Testes G de Independencia - categoricas contra tempo de espera")
+aux<-aux[order(aux[,4]),]
+print(aux,tabular.environment="longtable",floating=FALSE,include.rownames=F,NA.string="-")
+@
+\newpage
+Na Tabela de Descritivas das variaveis numericas agrupadas por tempo de espera, as metricas usadas sao:
+\begin{itemize}
+  \item n - contagem dos pacientes sem missing nessa variavel
+  \item Min - o minimo dos valores dessa variavel
+  \item $q_1$ - $1^o$ quartil (25\%)
+  \item $\tilde{x}$ - mediana ($2^o$ quartil - 50\%)
+  \item $\overline{x}$ - media
+  \item $q_3$ - $3^o$ quartil (75\%)
+  \item Maximo - o maximo dos valores dessa variavel
+  \item s - desvio padrao amostral
+  \item IQR - intervalo interquartilico $(q_3 - q_1)$
+  \item \#NA - contagem dos missings 
+\end{itemize}
+\newpage
+<<DescritivasNumGrupFIntro,fig.height=9,fig.width=6,fig.align='center',results="asis">>=
+nVar<-0
+Variavel<-vector()
+Valor<-vector()
+var.num.t<-vector()
+for(v in var.num){
+  if(kruskal.test(Anonimo1[,v]~Anonimo1$F.Introducao2_NO)$p.value<0.1){
+    var.num.t<-c(var.num.t,v)
+    if(is.element(names(Anonimo1)[v],var.par)){
+      nVar<-nVar+1
+      Variavel<-c(Variavel,rep(names(Anonimo1)[v],length(Anonimo1$F.Introducao2_NO)))
+      Valor<-c(Valor,Anonimo1[,v])
+    }
+  }
+}
+if(nVar>0){
+  tt<-data.frame(Variavel,Valor,Agrupamento=rep(Anonimo1$F.Introducao2_NO,nVar))
+  ptt<-ggplot(tt,aes(x=Agrupamento,y=Valor))+
+    geom_boxplot(aes(fill=Agrupamento),notch=T,notchwidth=1.25)+
+    guides(fill=FALSE)+
+    xlab("")+ylab("")+
+    ggtitle("Comparacao de Medianas por Tempo de Espera\n")+
+    theme_bw()+
+    facet_wrap(~Variavel,scales="free",ncol=2)
+  print(ptt,tabular.environment="longtable",floating=FALSE,include.rownames=F,NA.string="-",more=T)
+}
+
+@
+\newpage
+<<tDescritivasNumGrupFIntro,results="asis">>=
+
+if(length(var.num.t)>0){
+  tableContinuous(Anonimo1[,var.num.t],cap="Tabela de Descritivas - numericas por tempo de espera",group=Anonimo1$F.Introducao2_NO,print.pval="kruskal",longtable=T)
+} else{
+  cat("Tabela de Descritivas - numericas por tempo de espera : vazia")
+}
+@
+
+\newpage
+<<DescritivasNumGrupFIntroDif,fig.height=9,fig.width=6,fig.align='center',results="asis">>=
+nVar<-0
+Variavel<-vector()
+Valor<-vector()
+var.num.difr.t<-vector()
+for(v in var.num.difr){
+  if(kruskal.test(Anonimo1[,v]~Anonimo1$F.Introducao2_NO,subset=Anonimo1$F.Introducao2_NO!=0)$p.value<0.1){
+    var.num.difr.t<-c(var.num.difr.t,v)
+    if(is.element(names(Anonimo1)[v],var.par2)){
+      nVar<-nVar+1
+      Variavel<-c(Variavel,rep(names(Anonimo1)[v],length(Anonimo1$F.Introducao2_NO[Anonimo1$F.Introducao2_NO!=0])))
+      Valor<-c(Valor,Anonimo1[Anonimo1$F.Introducao2_NO!=0,v])
+    }
+  }
+}
+if(nVar>0){
+  tt<-data.frame(Variavel,Valor,Agrupamento=rep(Anonimo1$F.Introducao2_NO[Anonimo1$F.Introducao2_NO!=0],nVar))
+  ptt<-ggplot(tt,aes(x=Agrupamento,y=Valor))+
+    geom_boxplot(aes(fill=Agrupamento),notch=T,notchwidth=1.25)+
+    guides(fill=FALSE)+
+    xlab("")+ylab("")+
+    ggtitle("Comparacao de Medianas por Tempo de Espera\n")+
+    theme_bw()+
+    facet_wrap(~Variavel,scales="free",ncol=2)
+  print(ptt,tabular.environment="longtable",floating=FALSE,include.rownames=F,NA.string="-",more=T)
+}
+@
+\newpage
+<<tDescritivasNumGrupFIntroDif,results="asis">>=
+
+if(length(var.num.difr.t)>0){
+  tableContinuous(Anonimo1[,var.num.difr.t],cap="Tabela de Descritivas - numericas por tempo de espera - diferencas e taxas",group=Anonimo1$F.Introducao2_NO,print.pval="kruskal",longtable=T,subset=Anonimo1$F.Introducao2_NO!=0)
+} else{
+  cat("Tabela de Descritivas - numericas por tempo de espera - diferencas e taxas : vazia")
+}
+@
+
+
+\newpage
+\section*{Medidas Pareadas - Testes}
+Para as metricas que contem medidas pareadas para cada paciente, especificamente uma medida no instante da primeira avaliacao e a outra no instante do encaminhamento para o GTT (diferente do instante da primeira avaliacao), seguem os testes pareados nao parametricos (\textbf{Exact Wilcoxon-Signed-Rank Test}) entre metricas na primeira avaliacao e no encaminhamento para o GTT, inclusive por primeiro sintoma. Sob a hipotese nula nesses testes tem-se $mediana(xxxGTT-xxxAval)=0$, e sob a hipotese alternativa tem-se $mediana(xxxGTT-xxxAval)<0$ (i.e. o teste eh unicaudal).
+\newline
+\newpage
+<<IniFimBas,fig.height=5.5,fig.width=5,fig.align='center',results="asis">>=
+var.par<-c("FlgAV_T4","FlgGTT_T4","FlabAV_T4","FlabGTT_T4","FbocAV_T4","FbocGTT_T4","ASHA_Aval_T4","ASHA_GTT_T4","ALSFRS_Aval_T4","ALSFRS_GTT_T4","T_reslgAV_T4","T_reslgGTT_T4","IMCnumaval_NO","IMCnumGTT_NO")
+var.name<-c("Forca de Lingua","Forca de Labio","Forca de Bochecha","ASHA","ALSFRS","Tempo de Resposta da Lingua","IMC")
+
+for(n in 1:7){
+    #Bulbar e Membros-----------------------------
+    tabela<-Anonimo1[Anonimo1$Introducao2_NO<=-1,c(var.par[2*n-1],var.par[2*n])]
+    aux<-wilcoxsign_test(formula(paste(var.par[2*n],"~",var.par[2*n-1])),data=tabela,distribution="exact",alternative="less")
+    v1<-"Bulbar e Membros"
+    v2<-nrow(tabela)
+    v3<-as.numeric(statistic(aux,type="test"))
+    v4<-as.numeric(pvalue(aux))
+    tbm<-tabela[,var.par[2*n]]-tabela[,var.par[2*n-1]]
+    #Bulbar-----------------------------
+    tabela<-Anonimo1[Anonimo1$Introducao2_NO<=-1
+                   & Anonimo1$X1osint_T1=="Bulbar",c(var.par[2*n-1],var.par[2*n])]
+    aux<-wilcoxsign_test(formula(paste(var.par[2*n],"~",var.par[2*n-1])),data=tabela,distribution="exact",alternative="less")
+    v1<-c(v1,"Bulbar")
+    v2<-c(v2,nrow(tabela))
+    v3<-c(v3,as.numeric(statistic(aux,type="test")))
+    v4<-c(v4,as.numeric(pvalue(aux)))
+    tb<-tabela[,var.par[2*n]]-tabela[,var.par[2*n-1]]
+    #Membros-----------------------------
+    tabela<-Anonimo1[Anonimo1$Introducao2_NO<=-1
+                   & Anonimo1$X1osint_T1=="Membros",c(var.par[2*n-1],var.par[2*n])]
+    aux<-wilcoxsign_test(formula(paste(var.par[2*n],"~",var.par[2*n-1])),data=tabela,distribution="exact",alternative="less")
+    v1<-c(v1,"Membros")
+    v2<-c(v2,nrow(tabela))
+    v3<-c(v3,as.numeric(statistic(aux,type="test")))
+    v4<-c(v4,as.numeric(pvalue(aux)))
+    tm<-tabela[,var.par[2*n]]-tabela[,var.par[2*n-1]]
+    
+    v4<-p.adjust(v4,method="none")
+    #-------------
+    
+    saida<-data.frame(v1,v2,v3,v4,stringsAsFactors = FALSE,row.names = NULL)
+    colnames(saida)<-c("Grupo","No. de Pacientes","Estatistica","P-valor")
+    nout<-xtable(saida,caption=gsub("_"," ",paste("Tabela de Testes - ",var.par[2*n]," vs ",var.par[2*n-1])))
+    
+    tt<-data.frame(Grupo=c(rep("Bulbar e Membros",length(tbm)),
+                           rep("Bulbar",length(tb)),
+                           rep("Membros",length(tm))),
+                   VarAVGTT=c(tbm,tb,tm)
+                   )
+
+    ptt<-ggplot(tt,aes(x=Grupo,y=VarAVGTT))+
+      geom_boxplot(aes(fill=Grupo),notch=T,notchwidth=1.25)+
+      guides(fill=FALSE)+
+      xlab("")+ylab("")+
+      ggtitle(paste("Variacao de",var.name[n],"entre \no instante da primeira avaliacao \ne o instante do encaminhamento para o GTT \n"))+
+      theme_bw()+
+      facet_wrap(~Grupo,scales="free_x",ncol=3)+
+      scale_x_discrete("",labels="",breaks=NULL)
+    print(ptt,tabular.environment="longtable",floating=FALSE,include.rownames=F,NA.string="-",more=T)
+    print(nout,tabular.environment="longtable",floating=FALSE,include.rownames=F,NA.string="-",more=F)
+}
+@
+\newpage
+\section*{Graficos e Modelos Basicos\footnote{Nas tabelas de efeitos fixos que acompanham cada par de graficos, o numero $1$ que aparece junto aa variavel X1osint\_T1 (primeiro sintoma), como em X1osint\_T11, corresponde a Bulbar como primeiro sintoma.}}
+\newline
+\newline
+%O chunk abaixo eh meramente operacional e interno, nao gerando saidas imprimiveis
+<<Empilhamento>>=
+#Empilhando Anonimo1s
+varINV<-c(1:6,8,12:20,23,28:43,96:97,104:105)
+varAV<-c(7,9,21,24,26,44:56,70:82,101)
+varGTT<-c(10:11,22,25,27,57:69,83:95,102)
+varDESC<-c(98:100,103,106:115)
+Anonimo1AV<-cbind(Anonimo1[,varINV],Anonimo1[,varAV])
+Anonimo1GTT<-cbind(Anonimo1[,varINV],Anonimo1[,varGTT])
+
+names(Anonimo1AV)<-gsub("AV","",gsub("_Aval","",gsub("aval","",names(Anonimo1AV))))
+names(Anonimo1GTT)<-names(Anonimo1AV)
+
+#colando as tabelas, adicionando o momento e eliminando os cases nao repetidos
+Anonimo1AV<-Anonimo1AV[Anonimo1AV$Introducao_NO<0,]
+Anonimo1GTT<-Anonimo1GTT[Anonimo1GTT$Introducao_NO<0,]
+
+Anonimo1emp<-rbind(Anonimo1AV,Anonimo1GTT)
+Momento<-c(Anonimo1AV$Introducao_NO,rep(0,nrow(Anonimo1GTT)))
+Anonimo1emp<-cbind(Anonimo1emp,Momento)
+
+#Introducao_NO como fator
+Anonimo1emp$F.Momento <- as.factor(Anonimo1emp$Momento)
+
+#Somente Bulbar
+Anonimo1GTT.b<-Anonimo1GTT[Anonimo1GTT$X1osint_T1=="Bulbar",]
+Anonimo1AV.b<-Anonimo1AV[Anonimo1AV$X1osint_T1=="Bulbar",]
+
+#Somente Membros
+Anonimo1GTT.m<-Anonimo1GTT[Anonimo1GTT$X1osint_T1=="Membros",]
+Anonimo1AV.m<-Anonimo1AV[Anonimo1AV$X1osint_T1=="Membros",]
+
+#jogando no lixo????NO!
+#rm(Anonimo1AV,Anonimo1GTT)
+@
+
+Os modelos sao lineares com efeitos fixos (termos $\alpha$) e aleatorios (termos $\rho$) no intercepto (superindice $I$), i.e. o nivel medio de $y$ no instante do encaminhamento para o GTT, e na inclinacao (superindice $S$), i.e. a variacao media do nivel de $y$ ao se reduzir em uma unidade o tempo ate o encaminhamento para o GTT (eq. -Momento). A equacao segue abaixo
+\begin{equation*}
+\begin{split}
+y_{n,k} & = \alpha_{0}^{I} + \alpha_{1}^{I}(X1osint\_T1_{n}) + \rho_{n}^{I}\\
+& + (\alpha_{0}^{S} + \alpha_{1}^{S}(X1osint\_T1_{n}) + \rho_{n}^{S})*Momento_{n,k}  \\
+& + \varepsilon_{n,k} 
+\end{split}
+\end{equation*}
+onde o indice $k$ corresponde aa $k$-esima observacao das duas observacoes existentes para cada paciente $n$. 
+\newline
+\newline
+Os efeitos (fixos) do primeiro sintoma satisfazem 
+\begin{equation*}
+\begin{split}
+\alpha_{1}^{I}(Bulbar) + \alpha_{1}^{I}(Membros) & = 0 \\
+\alpha_{1}^{S}(Bulbar) + \alpha_{1}^{S}(Membros) & = 0,
+\end{split}
+\end{equation*}
+i.e. representam a diferenca entre a media geral e a media de cada grupo para o intercepto e a inclinacao.
+\newline
+\newline
+Os efeitos aleatorios representam o desvio aleatorio (especifico) de cada paciente da relacao descrita pelos efeitos fixos (a equacao sem os termos $\rho$) para o intercepto e a inclinacao, e satisfazem
+\begin{equation*}
+\begin{split}
+(\rho_{n}^{I}, \rho_{n}^{S})\sim N(0,D), 
+\end{split}
+\end{equation*}
+independentes em $n$, onde $D$ eh a matriz de covariancia da distribuicao normal bivariada correspondente. 
+\newline
+\newline
+Para cada paciente $n$, os erros (residuos) para a primeira avaliacao e para a avaliacao de encaminhamento para o GTT podem ser correlacionados, e satisfazem
+\begin{equation*}
+\begin{split}
+(\varepsilon_{n,1},\varepsilon_{n,2})& \sim N(0,\sigma^{2}\Lambda_n) \\
+corr(\varepsilon_{n,1},\varepsilon_{n,2}) = \Lambda_n^{1,2}& = \phi^{|Momento_{n,1}-Momento_{n,2}|},
+\end{split}
+\end{equation*}
+independentes em $n$, onde $\sigma$ eh o desvio padrao e $\Lambda_n$ a matriz de correlacao da normal bivariada correspondente, e $\phi \in [0,1)$. 
+\newline
+\newline
+Os efeitos aleatorios (\emph{between patients variation}) sao independentes dos erros (\emph{within patients variation}).
+
+
+
+\newpage
+
+
+
+<<RegFlgG,fig.height=9,fig.width=6,fig.align='center',results='asis'>>=
+w<-1000
+
+int.med.b<-mean(Anonimo1GTT.b$Flg_T4)
+inc.med.b<-mean((Anonimo1GTT.b$Flg_T4-Anonimo1AV.b$Flg_T4)/(0-Anonimo1AV.b$Introducao_NO))
+
+int.med.m<-mean(Anonimo1GTT.m$Flg_T4)
+inc.med.m<-mean((Anonimo1GTT.m$Flg_T4-Anonimo1AV.m$Flg_T4)/(0-Anonimo1AV.m$Introducao_NO))
+
+ggplot(Anonimo1emp, 
+       aes(x=Momento, 
+           y=Flg_T4,  
+           color=X1osint_T1, 
+           fill=X1osint_T1)
+       ) + 
+  geom_line(aes(group=N)) +
+  geom_point(aes(group=N,size=2),show_guide=F) +
+  geom_abline(intercept=int.med.b,slope=inc.med.b,color="red",size=3,alpha=0.25) +
+  geom_abline(intercept=int.med.m,slope=inc.med.m,color="darkturquoise",size=3,alpha=0.25) +
+  scale_x_continuous(breaks=c(-8,-7,-6,-5,-4,-3,-2,-1,0)) +
+  xlab("\nMomento") +
+  ylab("Forca de Lingua\n") +
+  ggtitle("Evolucao Individual da Forca de Lingua,\npor Primeiro Sintoma\n")+
+  theme_bw()+
+  theme(legend.position = "bottom",
+        legend.title=element_blank(),
+        legend.key = element_blank()
+        ) 
+
+ggplot(Anonimo1emp, 
+       aes(x=F.Momento, 
+           y=Flg_T4, 
+           fill=X1osint_T1)
+       ) + 
+  geom_boxplot(alpha=0.75) +
+  stat_summary(fun.y=mean, 
+               geom="line", 
+               aes(group=X1osint_T1, 
+                   color=X1osint_T1
+                   )
+               ) +
+  stat_summary(fun.y=mean, 
+               geom="point", 
+               aes(group=X1osint_T1, 
+                   color=X1osint_T1)
+               ) +
+  xlab("\nMomento") +
+  ylab("Forca de Lingua\n") +
+  ggtitle("Evolucao de Forca de Lingua,\npor Primeiro Sintoma\n")+
+  theme_bw()+
+  theme(legend.position = "bottom",
+        legend.title=element_blank(),
+        legend.key = element_blank()
+        )  
+@
+\newpage
+<<RegFlg,results='asis'>>=
+
+modeloFlg<-lme(Flg_T4 ~ Momento*X1osint_T1,
+            random = ~ Momento|N, 
+            data=Anonimo1emp,
+            contrasts = list(X1osint_T1 = "contr.sum"),
+            correlation = corCAR1(form = ~ Momento|N),
+            control=lmeControl(maxIter=50*w,
+                               msMaxIter=50*w,
+                               niterEM=25*w,
+                               msMaxEval=200*w 
+                               )
+            )
+
+print(xtable(summary(modeloFlg)$tTable,caption="Tabela Resumo - Efeitos Fixos - Forca de Lingua",digits=c(0,2,2,0,2,2)),tabular.environment="longtable",floating=FALSE,NA.string="-")
+@
+
+\newpage
+
+<<RegFlabG,fig.height=9,fig.width=6,fig.align='center',results='asis'>>=
+int.med.b<-mean(Anonimo1GTT.b$Flab_T4)
+inc.med.b<-mean((Anonimo1GTT.b$Flab_T4-Anonimo1AV.b$Flab_T4)/(0-Anonimo1AV.b$Introducao_NO))
+
+int.med.m<-mean(Anonimo1GTT.m$Flab_T4)
+inc.med.m<-mean((Anonimo1GTT.m$Flab_T4-Anonimo1AV.m$Flab_T4)/(0-Anonimo1AV.m$Introducao_NO))
+
+ggplot(Anonimo1emp, 
+       aes(x=Momento, 
+           y=Flab_T4,  
+           color=X1osint_T1, 
+           fill=X1osint_T1)
+       ) + 
+  geom_line(aes(group=N)) +
+  geom_point(aes(group=N,size=2),show_guide=F) +
+  geom_abline(intercept=int.med.b,slope=inc.med.b,color="red",size=3,alpha=0.25) +
+  geom_abline(intercept=int.med.m,slope=inc.med.m,color="darkturquoise",size=3,alpha=0.25) +
+  scale_x_continuous(breaks=c(-8,-7,-6,-5,-4,-3,-2,-1,0)) +
+  xlab("\nMomento") +
+  ylab("Forca de Labio\n") +
+  ggtitle("Evolucao Individual da Forca de Labio,\npor Primeiro Sintoma\n")+
+  theme_bw()+
+  theme(legend.position = "bottom",
+        legend.title=element_blank(),
+        legend.key = element_blank()
+        ) 
+
+ggplot(Anonimo1emp, 
+       aes(x=F.Momento, 
+           y=Flab_T4, 
+           fill=X1osint_T1)
+       ) + 
+  geom_boxplot(alpha=0.75) +
+  stat_summary(fun.y=mean, 
+               geom="line", 
+               aes(group=X1osint_T1, 
+                   color=X1osint_T1
+                   )
+               ) +
+  stat_summary(fun.y=mean, 
+               geom="point", 
+               aes(group=X1osint_T1, 
+                   color=X1osint_T1)
+               ) +
+  xlab("\nMomento") +
+  ylab("Forca de Labio\n") +
+  ggtitle("Evolucao de Forca de Labio,\npor Primeiro Sintoma\n")+
+  theme_bw()+
+  theme(legend.position = "bottom",
+        legend.title=element_blank(),
+        legend.key = element_blank()
+        )  
+@
+\newpage
+<<RegFlab,results='asis'>>=
+
+modeloFlab<-lme(Flab_T4 ~ Momento*X1osint_T1,
+            random=~Momento|N, 
+            data=Anonimo1emp,
+            contrasts = list(X1osint_T1 = "contr.sum"),
+            correlation = corCAR1(form = ~ Momento|N),
+            control=lmeControl(maxIter=50*w,
+                               msMaxIter=50*w,
+                               niterEM=25*w,
+                               msMaxEval=200*w
+                               )
+            )
+
+print(xtable(summary(modeloFlab)$tTable,caption="Tabela Resumo - Efeitos Fixos - Forca de Labio",digits=c(0,2,2,0,2,2)),tabular.environment="longtable",floating=FALSE,NA.string="-")
+@
+\newpage
+
+<<RegFbocG,fig.height=9,fig.width=6,fig.align='center',results='asis'>>=
+int.med.b<-mean(Anonimo1GTT.b$Fboc_T4)
+inc.med.b<-mean((Anonimo1GTT.b$Fboc_T4-Anonimo1AV.b$Fboc_T4)/(0-Anonimo1AV.b$Introducao_NO))
+
+int.med.m<-mean(Anonimo1GTT.m$Fboc_T4)
+inc.med.m<-mean((Anonimo1GTT.m$Fboc_T4-Anonimo1AV.m$Fboc_T4)/(0-Anonimo1AV.m$Introducao_NO))
+
+ggplot(Anonimo1emp, 
+       aes(x=Momento, 
+           y=Fboc_T4,  
+           color=X1osint_T1, 
+           fill=X1osint_T1)
+       ) + 
+  geom_line(aes(group=N)) +
+  geom_point(aes(group=N,size=2),show_guide=F) +
+  geom_abline(intercept=int.med.b,slope=inc.med.b,color="red",size=3,alpha=0.25) +
+  geom_abline(intercept=int.med.m,slope=inc.med.m,color="darkturquoise",size=3,alpha=0.25) +
+  scale_x_continuous(breaks=c(-8,-7,-6,-5,-4,-3,-2,-1,0)) +
+  xlab("\nMomento") +
+  ylab("Forca de Bochecha\n") +
+  ggtitle("Evolucao Individual da Forca de Bochecha,\npor Primeiro Sintoma\n")+
+  theme_bw()+
+  theme(legend.position = "bottom",
+        legend.title=element_blank(),
+        legend.key = element_blank()
+        ) 
+
+ggplot(Anonimo1emp, 
+       aes(x=F.Momento, 
+           y=Fboc_T4, 
+           fill=X1osint_T1)
+       ) + 
+  geom_boxplot(alpha=0.75) +
+  stat_summary(fun.y=mean, 
+               geom="line", 
+               aes(group=X1osint_T1, 
+                   color=X1osint_T1
+                   )
+               ) +
+  stat_summary(fun.y=mean, 
+               geom="point", 
+               aes(group=X1osint_T1, 
+                   color=X1osint_T1)
+               ) +
+  xlab("\nMomento") +
+  ylab("Forca de Bochecha\n") +
+  ggtitle("Evolucao de Forca de Bochecha,\npor Primeiro Sintoma\n")+
+  theme_bw()+
+  theme(legend.position = "bottom",
+        legend.title=element_blank(),
+        legend.key = element_blank()
+        )  
+@
+\newpage
+<<RegFboc,results='asis'>>=
+
+modeloFboc<-lme(Fboc_T4 ~ Momento*X1osint_T1,
+            random=~Momento|N, 
+            data=Anonimo1emp,
+            contrasts = list(X1osint_T1 = "contr.sum"),
+            correlation = corCAR1(form = ~ Momento|N),
+            control=lmeControl(maxIter=50*w,
+                               msMaxIter=50*w,
+                               niterEM=25*w,
+                               msMaxEval=200*w
+                               )
+            )
+
+print(xtable(summary(modeloFboc)$tTable,caption="Tabela Resumo - Efeitos Fixos - Forca de Bochecha",digits=c(0,2,2,0,2,2)),tabular.environment="longtable",floating=FALSE,NA.string="-")
+@
+\newpage
+\section*{Informacoes Adicionais}
+\newline
+\newline
+\subsection*{Linear Mixed Models}
+\newline
+\newline
+\newline
+\newline
+LMM - Modelos Lineares Mistos sao modelos estatisticos para variaveis resposta continuas nas quais os residuos sao normalmente distribuidos, mas podem nao ser independentes ou ter variancia constante. O nome modelos lineares mistos e proveniente do fato que esses modelos sao lineares nos parametros, e que as covariadas, ou variaveis independentes, podem envolver um mix de efeitos fixos e aleatorios. A distincao entre fatores fixos e aleatorios e seus efeitos relacionados em uma variavel dependente e critica no contexto dos LMMs.
+\newline
+\newline
+Os Efeitos Fixos descrevem a relacao entre variaveis dependentes e variaveis preditoras (ou seja, fatores fixos ou covariadas continuas) para uma populacao inteira de unidades de analise, ou para um numero relativamente pequeno de subpopulacoes definidas por niveis de um fator fixo. Efeitos fixos podem descrever contrastes ou diferencas entre niveis de um fator fixo (por exemplo, entre homens e mulheres) em termos de respostas medias para a variavel dependente continua, ou eles podem descrever o efeito de uma covariada continua em uma variavel dependente. E assumido que efeitos fixos sao quantidades fixas desconhecidas em um LMM, e sua estimacao e baseada em analises dos dados coletados em um dado estudo.
+\newline
+\newline
+A estimacao destes parametros em LMMs e geralmente de interesse intrinseco, porque eles indicam as relacoes entre as covariadas com a variavel resposta continua. Quando os niveis de um fator podem ser concebidos como tendo sido amostrados de um espaco amostral, de maneira que cada nivel em particular nao e de interesse intrinseco (por exemplo, salas de aula ou clinicas que foram aleatoriamente amostrados de uma populacao maior de salas de aula ou clinicas), os efeitos associados com os niveis de tais fatores podem ser modelados como efeitos aleatorios em um LMM.
+\newline
+\newline
+Fatores fixos sao variaveis categoricas ou de classificacao, para o qual o pesquisador incluiu todos os niveis (ou condicoes) que sao de interesse no estudo. Eles podem incluir covariadas qualitativas, tais como genero; variaveis de classificacao implicitas de um design de pesquisa, como regiao e estrato, ou pelo design do estudo, como metodo de tratamento em um estudo clinico aleatorizado; ou variaveis de ordinais de classificacao em um estudo observacional, tal como grupos de idade. Os niveis de um fator fixo sao escolhidos de tal maneira que representem condicoes especificas, e podem ser usados para definir contrastes (ou conjunto de contrastes) que sejam de interesse no estudo.
+\newline
+\newline
+Os Efeitos Aleatorios sao valores aleatorios associados com os niveis de um fator aleatorio (ou fatores) em um LMM. Esses valores, que sao especificos de um dado nivel de um fator aleatorio, normalmente representem desvios aleatorios das relacoes descritas pelos efeitos fixos. Por exemplo, efeitos aleatorios associados com os niveis de um fator aleatorio entram no LMM como interceptos aleatorios (representando desvios aleatorios de um dado individuo ou cluster, a partir do intercepto fixo geral), ou como coeficientes aleatorios (representando desvios aleatorios para um dado individuo ou cluster, a partir dos efeitos fixos gerais) no modelo. Em contraste com os efeitos fixos, os efeitos aleatorios sao representados como variaveis aleatorias em um LMM.
+\newline
+\newline
+Quanto a estimacao desses parametros no LMM, os efeitos aleatorios sao representados por variaveis aleatorias (nao observadas), em que normalmente se assume a hipotese de seguirem uma distribuicao normal.
+\newline
+\newline
+Fator aleatorio e uma variavel de classificacao com niveis que pode ser pensado como tendo sido aleatoriamente amostrados de uma populacao de niveis que esta sob estudo. Todos os possiveis niveis do fator aleatorio nao estao presentes no conjunto de dados, mas a intencao do pesquisador e fazer inferencias sobre a populacao inteira de niveis. Fatores aleatorios sao considerados em uma analise de maneira que a variacao em uma variavel dependente atraves dos niveis dos fatores aleatorios possa ser avaliada, e os resultados da analise de dados podem ser generalizados para uma populacao de niveis maior do fator aleatorio.
+\newline
+\newline
+Design de estudos que geram conjuntos de dados que possam ser apropriadamente analisados usando LMMs incluem:
+\begin{itemize}
+\item Estudos com dados clusterizados, como estudantes em classes de aula, ou designs experimentais com blocos aleatorios, tais como lotes de materia prima para um processo industrial;
+\item Estudos com dados de medidas repetidas ou longitudinais (o foco deste projeto), no qual individuos sao medidos repetidamente ao longo do tempo ou sob diferentes condicoes.
+\end{itemize}
+Esses designs surgem em uma variedade de configuracoes dentro de areas, como areas medica, biologica, fisica, ciencias sociais. LMM fornece aos pesquisadores uma ferramenta poderosa e flexivel para esses tipos de dados.
+\newline
+\newline
+Dados longitudinais surgem quando multiplas observacoes sao feitas sobre o mesmo individuo (por exemplo, pacientes com ELA) ou sobre unidades de analise ao longo do tempo. Medidas feitas sobre a mesma variavel para o mesmo individuo sao provavelmente correlacionadas (por exemplo, as medidas do peso corporal de um dado individuo tendem a ser similares ao longo do tempo). Modelos ajustados para dados longitudinais envolvem a estimacao de parametros de covariancia para capturar esta correlacao.
+\newline
+\newline
+Pode-se pensar sobre conjuntos de dados longitudinais como sendo conjunto de dados multinivel. Num conjunto de dados longitudinal, o Nivel 1 representa as medidas repetidas realizadas na mesma unidade de analise. A variavel continua dependente e sempre medida no Nivel 1 dos dados. O Nivel 2 representa o proximo nivel hierarquico. Em conjuntos de dados clusterizados, as observacoes do Nivel 2 representam clusters de unidades. Em conjuntos de dados longitudinais, o Nivel 2 representa as unidades de analise. Mede-se variaveis continuas e categoricas em niveis diferentes dos dados, e elas sao referidas como Nivel 1, Nivel 2, e assim por diante.
+
+
+\newpage
+\subsection*{Modelos - Detalhes}
+<<Flg>>=
+summary(modeloFlg)
+#intervals(modeloFlg)
+@
+\newpage
+<<Flab>>=
+summary(modeloFlab)
+#intervals(modeloFlab)
+@
+\newpage
+<<Fboc>>=
+summary(modeloFboc)
+#intervals(modeloFboc)
+@
+\newpage
+\subsection*{Informacoes das Variaveis Usadas no Relatorio}
+\newline
+\textbf{Posicao na Tabela de Dados - Codigo da variavel - Tipo de variavel - Origem da variavel} - Nome completo da variavel \begin{itemize}  \item Niveis da variavel/Faixa de valores da variavel \end{itemize}
+\newline
+\textbf{1 - N - Numerica - Original} - Chave do paciente \begin{itemize}  \item 1 a 40 \end{itemize}
+\textbf{2 - Introducao\_NO - Numerica - Calculada} - Tempo de espera, definido como o tempo entre a primeira avaliacao e o encaminhamento para o GTT \begin{itemize}  \item -8 a 0 \end{itemize}
+\textbf{3 - G\_T1 - Nominal - Original} - Genero \begin{itemize}  \item 1-Masculino \item 2- Feminino \end{itemize}
+\textbf{4 - Id\_T1 - Numerica - Original} - Idade \begin{itemize}  \item em anos \end{itemize}
+\textbf{5 - Prof\_T1 - Nominal - Original} - Profissao \begin{itemize}  \item 1-bracal \item 2- tecnico \item 3- intelectual \end{itemize}
+\textbf{6 - Escol\_T1 - Numerica - Original} - Escolaridade \begin{itemize}  \item em anos \end{itemize}
+\textbf{7 - Paval\_T1 - Numerica - Original} - Peso na avaliacao \begin{itemize}  \item em Kg \end{itemize}
+\textbf{8 - Alt\_T1 - Numerica - Original} - Altura \begin{itemize}  \item em metros \end{itemize}
+\textbf{9 - IMCaval\_T1 - Ordinal - Original} - indice de massa corporea na avaliacao \begin{itemize}  \item 1- baixo peso \item 2- saudavel \item 3- obesidade \end{itemize}
+\textbf{10 - PGTT\_NO - Numerica - Original} - Peso no momento da indicacao de GTT \begin{itemize}  \item em Kg \end{itemize}
+\textbf{11 - IMCGTT\_NO - Ordinal - Original} - indice de massa corporea no momento da indicacao de GTT \begin{itemize}  \item 1- baixo peso \item 2- saudavel \item 3- obesidade \end{itemize}
+\textbf{12 - T\_evol\_GTT\_NO - Numerica - Original} - Tempo de evolucao para GTT \begin{itemize}  \item em meses \end{itemize}
+\textbf{13 - Tdoenca\_T1 - Numerica - Original} - Tempo de doenca \begin{itemize}  \item em meses \end{itemize}
+\textbf{14 - X1osint\_T1 - Nominal - Original} - Primeiro sintoma \begin{itemize}  \item 1- membros \item 2- bulbar \end{itemize}
+\textbf{15 - T\_queixa\_resp\_T1 - Numerica - Original} - Tempo de queixa de respiracao \begin{itemize}  \item em meses \end{itemize}
+\textbf{16 - T\_queixa\_degl\_T1 - Numerica - Original} - Tempo de queixa de degluticao \begin{itemize}  \item em meses \end{itemize}
+\textbf{17 - PNM\_T1 - Nominal - Original} - Pneumonia \begin{itemize}  \item 0- nao \item 1- sim \end{itemize}
+\textbf{18 - Emag\_T1 - Nominal - Original} - Emagrecimento \begin{itemize}  \item 0- nao \item 1- sim  \end{itemize}
+\textbf{19 - Aum\_T\_ref\_T1 - Nominal - Original} - Aumento do tempo de refeicao \begin{itemize}  \item 0- nao \item 1- sim \end{itemize}
+\textbf{20 - Dieta\_pre\_Aval\_T4 - Nominal - Original} - Dieta no momento da avaliacao \begin{itemize}  \item 0- N/A \item 1- pastoso e liquido espessado \item 2- pastoso e liquido fino \item 3- solido macio e liquido espessado \item 4- solido macio e liquido fino \item 5- geral  \end{itemize}
+\textbf{21 - Dieta\_Aval\_T1 - Nominal - Original} - Dieta sugerida na primeira avaliacao \begin{itemize}  \item 0- N/A \item 1- pastoso e liquido espessado \item 2- pastoso e liquido fino \item 3- solido macio e liquido espessado \item 4- solido macio e liquido fino \item 5- geral  \end{itemize}
+\textbf{22 - Dieta\_GTT\_T4 - Nominal - Original} - Dieta via oral sugerida no momento da indicacao de GTT, alem da GTT \begin{itemize}  \item 0- N/A \item 1- pastoso e liquido espessado \item 2- pastoso e liquido fino \item 3- solido macio e liquido espessado \item 4- solido macio e liquido fino \item 5- geral  \end{itemize}
+\textbf{23 - Motivo\_GTT\_T4 - Nominal - Original} - Motivo da indicacao de GTT \begin{itemize}  \item 1- emagrecimento \item 2- disfagia \item 3- dificuldade pulmonar  \end{itemize}
+\textbf{24 - ASHA\_Aval\_T4 - Numerica - Original} - Escala ASHA de funcionalidade da degluticao na avaliacao \begin{itemize}  \item de 1 a 7 (numero sem escala) \end{itemize}
+\textbf{25 - ASHA\_GTT\_T4 - Ordinal - Original} - Escala ASHA de funcionalidade da degluticao no momento da indicacao de GTT  \begin{itemize}  \item de 1 a 7 (numero sem escala) \end{itemize}
+\textbf{26 - ALSFRS\_Aval\_T4 - Numerica - Original} - Escala de Funcionalidade de ELA no momento da avaliacao \begin{itemize}  \item de 1 a 40 (numero sem escala) \end{itemize}
+\textbf{27 - ALSFRS\_GTT\_T4 - Ordinal - Original} - Escala de Funcionalidade de ELA no momento da indicacao de GTT \begin{itemize}  \item de 1 a 40 (numero sem escala) \end{itemize}
+\textbf{28 - Mob\_lab\_T2 - Nominal - Original} - Mobilidade de labio \begin{itemize}  \item 0- satisfatoria \item 1- insatisfatoria \end{itemize}
+\textbf{29 - Fc\_lab\_T2 - Nominal - Original} - Forca de labio \begin{itemize}  \item 0- satisfatoria \item 1- insatisfatoria \end{itemize}
+\textbf{30 - Mob\_lg\_T2 - Nominal - Original} - Mobilidade de lingua \begin{itemize}  \item 0- satisfatoria \item 1- insatisfatoria \end{itemize}
+\textbf{31 - Fc\_lg\_T2 - Nominal - Original} - Forca de lingua \begin{itemize}  \item 0- satisfatoria \item 1- insatisfatoria \end{itemize}
+\textbf{32 - Fasc\_lg\_T2 - Nominal - Original} - Fasciculacao de lingua \begin{itemize}  \item 0- nao \item 1- sim \end{itemize}
+\textbf{33 - Mob\_boc\_T2 - Nominal - Original} - Mobilidade de bochecha \begin{itemize}  \item 0- satisfatoria \item 1- insatisfatoria \end{itemize}
+\textbf{34 - Fc\_boc\_T2 - Nominal - Original} - Forca de bochecha \begin{itemize}  \item 0- satisfatoria \item 1- insatisfatoria \end{itemize}
+\textbf{35 - Ref\_D\_T2 - Nominal - Original} - Refexo nauseoso direito \begin{itemize}  \item 0- nao \item 1- sim \end{itemize}
+\textbf{36 - Ref\_E\_T2 - Nominal - Original} - Reflexo nauseoso esquerdo \begin{itemize}  \item 0- nao \item 1- sim \end{itemize}
+\textbf{37 - MVP\_D\_T2 - Nominal - Original} - Mobilidade de veu palatino Direito \begin{itemize}  \item 0- insatisfatoria \item 1- satisfatoria \end{itemize}
+\textbf{38 - MVP\_E\_T2 - Nominal - Original} - Mobilidade de veu palatino Esquerdo \begin{itemize}  \item 0- insatisfatoria \item 1- satisfatoria \end{itemize}
+\textbf{39 - Dent\_S\_T2 - Nominal - Original} - Denticao superior  \begin{itemize}  \item 1- completa \item 2- desdentado \item 3- ausencia parcial \item 4- protese completa \item 5- protese parcial \end{itemize}
+\textbf{40 - Dent\_I\_T2 - Nominal - Original} - Denticao inferior \begin{itemize}  \item 1- completa \item 2- desdentado \item 3- ausencia parcial \item 4- protese completa \item 5- protese parcial \end{itemize}
+\textbf{41 - EA\_sal\_T2 - Nominal - Original} - Escape anterior de saliva \begin{itemize}  \item 0- nao \item 1- sim \end{itemize}
+\textbf{42 - Esal\_T2 - Nominal - Original} - Estase de saliva \begin{itemize}  \item 0- nao \item 1- sim \end{itemize}
+\textbf{43 - SC\_sal\_T2 - Nominal - Original} - Sinais clinicos com saliva \begin{itemize}  \item 0- nao \item 1- sim \end{itemize}
+\textbf{44 - EA\_past\_Aval\_T3 - Nominal - Original} - Escape anterior com pastoso na avaliacao \begin{itemize}  \item 0- nao \item 1- sim \end{itemize}
+\textbf{45 - Dif\_TO\_past\_Aval\_T3 - Nominal - Original} - Dificuldade de transito oral com o pastoso na avaliacao \begin{itemize}  \item 0- nao \item 1- sim \end{itemize}
+\textbf{46 - SC\_past\_Aval\_T3 - Nominal - Original} - Sinais clinicos com o pastoso na avaliacao \begin{itemize}  \item 0- nao \item 1- sim \end{itemize}
+\textbf{47 - E\_A\_sol\_Aval\_T3 - Nominal - Original} - Escape anterior de solido na avaliacao \begin{itemize}  \item 0- nao \item 1- sim \item N/A- nao aplicavel \end{itemize}
+\textbf{48 - Dif\_TO\_sol\_Aval\_T3 - Nominal - Original} - Dificuldade de transito oral com o solido na avaliacao \begin{itemize}  \item 0- nao \item 1- sim \item N/A- nao aplicavel \end{itemize}
+\textbf{49 - SC\_sol\_Aval\_T3 - Nominal - Original} - Sinais clinicos com o solido na avaliacao \begin{itemize}  \item 0- nao \item 1- sim \item N/A- nao aplicavel \end{itemize}
+\textbf{50 - Dif\_Mast\_Aval\_T3 - Nominal - Original} - Dificuldade de mastigacao na avaliacao \begin{itemize}  \item 0- nao \item 1- sim \item N/A- nao aplicavel \end{itemize}
+\textbf{51 - E\_A\_liq\_Aval\_T3 - Nominal - Original} - Estase anterior de liquido na avaliacao \begin{itemize}  \item 0- nao \item 1- sim \item N/A- nao aplicavel \end{itemize}
+\textbf{52 - Dif\_TO\_liq\_Aval\_T3 - Nominal - Original} - Dificuldade de transito oral com  liquido na avaliacao \begin{itemize}  \item 0- nao \item 1- sim \item N/A- nao aplicavel \end{itemize}
+\textbf{53 - SC\_liq\_Aval\_T3 - Nominal - Original} - Sinais clinicos com liquido na avaliacao \begin{itemize}  \item 0- nao \item 1- sim \item N/A- nao aplicavel \end{itemize}
+\textbf{54 - EA\_liq\_esp\_Aval\_T3 - Nominal - Original} - Escape anterior com liquido espessado na avaliacao \begin{itemize}  \item 0- nao \item 1- sim \item N/A- nao aplicavel \end{itemize}
+\textbf{55 - Dif\_TO\_liq\_esp\_Aval\_T3 - Nominal - Original} - Dificuldade de transito oral com liquido espessado na avaliacao \begin{itemize}  \item 0- nao \item 1- sim \item N/A- nao aplicavel \end{itemize}
+\textbf{56 - SC\_liq\_esp\_Aval\_T3 - Nominal - Original} - Sinais clinicos com liquido espessado na avaliacao \begin{itemize}  \item 0- nao \item 1- sim \item N/A- nao aplicavel \end{itemize}
+\textbf{57 - EA\_past\_GTT\_NO - Nominal - Original} - Escape anterior com pastoso no momento da indicacao de GTT \begin{itemize}  \item 0- nao \item 1- sim \item N/A- nao aplicavel \end{itemize}
+\textbf{58 - Dif\_TO\_past\_GTT\_NO - Nominal - Original} - Dificuldade de transito oral com o pastoso no momento da indicacao de GTT \begin{itemize}  \item 0- nao \item 1- sim \item N/A- nao aplicavel \end{itemize}
+\textbf{59 - SC\_past\_GTT\_NO - Nominal - Original} - Sinais clinicos com o pastoso no momento da indicacao de GTT \begin{itemize}  \item 0- nao \item 1- sim \item N/A- nao aplicavel \end{itemize}
+\textbf{60 - EA\_sol\_GTT\_NO - Nominal - Original} - Escape anterior de solido no momento da indicacao de GTT \begin{itemize}  \item 0- nao \item 1- sim \item N/A- nao aplicavel \end{itemize}
+\textbf{61 - Dif\_TO\_sol\_GTT\_NO - Nominal - Original} - Dificuldade de transito oral com o solido no momento da indicacao de GTT \begin{itemize}  \item 0- nao \item 1- sim \item N/A- nao aplicavel \end{itemize}
+\textbf{62 - SC\_sol\_GTT\_NO - Nominal - Original} - Sinais clinicos com o solido no momento da indicacao de GTT \begin{itemize}  \item 0- nao \item 1- sim \item N/A- nao aplicavel \end{itemize}
+\textbf{63 - Dif\_Mast\_sol\_GTT\_NO - Nominal - Original} - Dificuldade de mastigacao no momento da indicacao de GTT \begin{itemize}  \item 0- nao \item 1- sim \item N/A- nao aplicavel \end{itemize}
+\textbf{64 - EA\_Liq\_GTT\_NO - Nominal - Original} - Estase anterior de liquido no momento da indicacao de GTT \begin{itemize}  \item 0- nao \item 1- sim \item N/A- nao aplicavel \end{itemize}
+\textbf{65 - Dif\_TO\_liq\_GTT\_NO - Nominal - Original} - Dificuldade de transito oral com  liquido no momento da indicacao de GTT \begin{itemize}  \item 0- nao \item 1- sim \item N/A- nao aplicavel \end{itemize}
+\textbf{66 - SC\_liq\_GTT\_NO - Nominal - Original} - Sinais clinicos com liquido no momento da indicacao de GTT \begin{itemize}  \item 0- nao \item 1- sim \item N/A- nao aplicavel \end{itemize}
+\textbf{67 - EA\_Liq\_esp\_GTT\_NO - Nominal - Original} - Escape anterior com liquido espessado no momento da indicacao de GTT \begin{itemize}  \item 0- nao \item 1- sim \item N/A- nao aplicavel \end{itemize}
+\textbf{68 - Dif\_TO\_liq\_esp\_GTT\_NO - Nominal - Original} - Dificuldade de transito oral com liquido espessado no momento da indicacao de GTT \begin{itemize}  \item 0- nao \item 1- sim \item N/A- nao aplicavel \end{itemize}
+\textbf{69 - SC\_liq\_esp\_GTT\_NO - Nominal - Original} - Sinais clinicos com liquido espessado no momento da indicacao de GTT \begin{itemize}  \item 0- nao \item 1- sim \item N/A- nao aplicavel \end{itemize}
+\textbf{70 - FlgAV\_m1\_T4 - Numerica - Original} - Primeira forca de lingua na avaliacao \begin{itemize}  \item $\ge 0$ (em N) \end{itemize}
+\textbf{71 - FlgAV\_m2\_T4 - Numerica - Original} - Segunda forca de lingua na avaliacao \begin{itemize}  \item $\ge 0$ (em N) \end{itemize}
+\textbf{72 - FlgAV\_m3\_T4 - Numerica - Original} - Terceira forca de lingua na avaliacao \begin{itemize}  \item $\ge 0$ (em N) \end{itemize}
+\textbf{73 - FlgAV\_T4 - Numerica - Original} - Forca de lingua na avaliacao \begin{itemize}  \item $\ge 0$ (em N) \end{itemize}
+\textbf{74 - FlabAV\_m1\_T4 - Numerica - Original} - Primeira forca de labios na avaliacao \begin{itemize}  \item $\ge 0$ (em N) \end{itemize}
+\textbf{75 - FlabAV\_m2\_T4 - Numerica - Original} - Segunda forca de labios na avaliacao \begin{itemize}  \item $\ge 0$ (em N) \end{itemize}
+\textbf{76 - FlabAV\_m3\_T4 - Numerica - Original} - Terceira forca de labios na avaliacao \begin{itemize}  \item $\ge 0$ (em N) \end{itemize}
+\textbf{77 - FlabAV\_T4 - Numerica - Original} - Forca de labios na avaliacao \begin{itemize}  \item $\ge 0$ (em N) \end{itemize}
+\textbf{78 - FbocAV\_m1\_T4 - Numerica - Original} - Primeira forca de bochechas na avaliacao \begin{itemize}  \item $\ge 0$ (em N) \end{itemize}
+\textbf{79 - FbocAV\_m2\_T4 - Numerica - Original} - Segunda forca de bochechas na avaliacao \begin{itemize}  \item $\ge 0$ (em N) \end{itemize}
+\textbf{80 - FbocAV\_m3\_T4 - Numerica - Original} - Terceira forca de bochechas na avaliacao \begin{itemize}  \item $\ge 0$ (em N) \end{itemize}
+\textbf{81 - FbocAV\_T4 - Numerica - Original} - Forca de bochechas na avaliacao \begin{itemize}  \item $\ge 0$ (em N) \end{itemize}
+\textbf{82 - T\_reslgAV\_T4 - Numerica - Original} - Tempo de resistencia de lingua na avaliacao \begin{itemize}  \item $\ge 0$ (em segundos) \end{itemize}
+\textbf{83 - FlgGTT\_m1\_T4 - Numerica - Original} - Primeira forca de lingua no momento da indicacao de GTT \begin{itemize}  \item $\ge 0$ (em N) \end{itemize}
+\textbf{84 - FlgGTT\_m2\_T4 - Numerica - Original} - Segunda forca de lingua no momento da indicacao de GTT \begin{itemize}  \item $\ge 0$ (em N) \end{itemize}
+\textbf{85 - FlgGTT\_m3\_T4 - Numerica - Original} - Terceira forca de lingua no momento da indicacao de GTT \begin{itemize}  \item $\ge 0$ (em N) \end{itemize}
+\textbf{86 - FlgGTT\_T4 - Numerica - Original} - Forca de lingua no momento da indicacao de GTT \begin{itemize}  \item $\ge 0$ (em N) \end{itemize}
+\textbf{87 - FlabGTT\_m1\_T4 - Numerica - Original} - Primeira forca de labios no momento da indicacao de GTT \begin{itemize}  \item $\ge 0$ (em N) \end{itemize}
+\textbf{88 - FlabGTT\_m2\_T4 - Numerica - Original} - Segunda forca de labios no momento da indicacao de GTT \begin{itemize}  \item $\ge 0$ (em N) \end{itemize}
+\textbf{89 - FlabGTT\_m3\_T4 - Numerica - Original} - Terceira forca de labios no momento da indicacao de GTT \begin{itemize}  \item $\ge 0$ (em N) \end{itemize}
+\textbf{90 - FlabGTT\_T4 - Numerica - Original} - Forca de labios no momento da indicacao de GTT \begin{itemize}  \item $\ge 0$ (em N) \end{itemize}
+\textbf{91 - FbocGTT\_m1\_T4 - Numerica - Original} - Primeira forca de bochechas no momento da indicacao de GTT \begin{itemize}  \item $\ge 0$ (em N) \end{itemize}
+\textbf{92 - FbocGTT\_m2\_T4 - Numerica - Original} - Segunda forca de bochechas no momento da indicacao de GTT \begin{itemize}  \item $\ge 0$ (em N) \end{itemize}
+\textbf{93 - FbocGTT\_m3\_T4 - Numerica - Original} - Terceira forca de bochechas no momento da indicacao de GTT \begin{itemize}  \item $\ge 0$ (em N) \end{itemize}
+\textbf{94 - FbocGTT\_T4 - Numerica - Original} - Forca de bochechas no momento da indicacao de GTT \begin{itemize}  \item $\ge 0$ (em N) \end{itemize}
+\textbf{95 - T\_reslgGTT\_T4 - Numerica - Original} - Tempo de resistencia de lingua no momento da indicacao de GTT \begin{itemize}  \item $\ge 0$ (em segundos) \end{itemize}
+\textbf{96 - Introducao2\_NO - Numerica - Calculada} - Introducao\_NO truncada em -3 \newline \newline
+\textbf{97 - F.Introducao2\_NO - Ordinal - Calculada} - Introducao2\_NO ordinal \newline \newline
+\textbf{98 - DifFlg\_NO - Numerica - Calculada} - Variacao inicio-fim da Forca de Lingua ($FlgGTT\_T4 - FlgAV\_T4$) \begin{itemize}  \item pode ser positivo ou negativo (em N) \end{itemize}
+\textbf{99 - DifFlab\_NO - Numerica - Calculada} - Variacao inicio-fim da Forca de Labio ($FlabGTT\_T4 - FlabAV\_T4$) \begin{itemize}  \item pode ser positivo ou negativo (em N) \end{itemize}
+\textbf{100 - DifFboc\_NO - Numerica - Calculada} - Variacao inicio-fim da Forca de Bochecha ($FbocGTT\_T4 - FbocAV\_T4$) \begin{itemize}  \item pode ser positivo ou negativo (em N) \end{itemize}
+\textbf{101 - IMCnumaval\_NO - Numerica - Calculada} - IMC na 1a avaliacao, calculado a partir de peso e altura ($IMCnumaval\_NO = \frac{Paval\_T1(kg)}{Alt\_T1(m)^2}$) \begin{itemize}  \item acima de 0 (numero sem escala) \end{itemize}
+\textbf{102 - IMCnumGTT\_NO - Numerica - Calculada} - IMC no GTT, calculado a partir de peso e altura ($IMCnumGTT\_NO = \frac{PGTT\_T1(kg)}{Alt\_T1(m)^2}$) \begin{itemize}  \item acima de 0 (numero sem escala) \end{itemize}
+\textbf{103 - DifIMC\_NO - Numerica - Calculada} - Diferenca entre os IMCs numericos ($IMCnumGTT\_NO - IMCnumaval\_NO$) \begin{itemize}  \item pode ser positivo ou negativo (numero sem escala) \end{itemize}
+\textbf{104 - F.Id\_T1 - Ordinal - Calculada} - Faixas de idade \begin{itemize}  \item baixa = ate 50 anos \item media = entre 51 e 65 anos \item alta = acima de 66 anos \end{itemize}
+\textbf{105 - F.Escol\_T1 - Ordinal - Calculada} - Faixas de escolaridade \begin{itemize}  \item baixa = ate 2 anos de estudo \item media = entre 3 e 7 anos de estudo \item alta = acima de 8 anos de estudo \end{itemize}
+\textbf{106 - DifASHA\_NO - Numerica - Calculada} - Diferenca entre o ASHA ($ASHA\_GTT\_T4 - ASHA\_Aval\_T4$) \begin{itemize}  \item pode ser positivo ou negativo (numero sem escala) \end{itemize}
+\textbf{107 - DifALSFRS\_NO - Numerica - Calculada} - Diferenca entre o ALSFRS ($ALSFRS\_GTT\_T4 - ALSFRS\_Aval\_T4$) \begin{itemize}  \item pode ser positivo ou negativo (numero sem escala) \end{itemize}
+\textbf{108 - DifT\_reslg\_NO - Numerica - Calculada} - Diferenca entre o Tempo de resistencia de lingua ($T\_reslgGTT\_T4 - T\_reslgAV\_T4$) \begin{itemize}  \item pode ser positivo ou negativo (numero sem escala) \end{itemize}
+\textbf{109 - DifFlg\_NO\_R - Numerica - Calculada} - Taxa media de variacao inicio-fim da Forca de Lingua ($\frac{DifFlg\_NO}{0-Introducao\_NO}$) \begin{itemize}  \item pode ser positivo ou negativo (numero sem escala) \item inicio: corresponde a primeira avaliacao  \item fim: corresponde ao instante de encaminhamento para o GTT  \end{itemize}
+\textbf{110 - DifFlab\_NO\_R - Numerica - Calculada} - Taxa media de variacao inicio-fim da Forca de Labio ($\frac{DifFlab\_NO}{0-Introducao\_NO}$) \begin{itemize}  \item pode ser positivo ou negativo (numero sem escala) \item inicio: corresponde a primeira avaliacao  \item fim: corresponde ao instante de encaminhamento para o GTT  \end{itemize}
+\textbf{111 - DifFboc\_NO\_R - Numerica - Calculada} - Taxa media de variacao inicio-fim da Forca de Bochecha ($\frac{DifFboc\_NO}{0-Introducao\_NO}$) \begin{itemize}  \item pode ser positivo ou negativo (numero sem escala) \item inicio: corresponde a primeira avaliacao  \item fim: corresponde ao instante de encaminhamento para o GTT  \end{itemize}
+\textbf{112 - DifIMC\_NO\_R - Numerica - Calculada} - Taxa media de variacao inicio-fim do IMC ($\frac{DifIMC\_NO}{0-Introducao\_NO}$) \begin{itemize}  \item pode ser positivo ou negativo (numero sem escala) \item inicio: corresponde a primeira avaliacao  \item fim: corresponde ao instante de encaminhamento para o GTT  \end{itemize}
+\textbf{113 - DifASHA\_NO\_R - Numerica - Calculada} - Taxa media de variacao inicio-fim do ASHA ($\frac{DifASHA\_NO}{0-Introducao\_NO}$) \begin{itemize}  \item pode ser positivo ou negativo (numero sem escala) \item inicio: corresponde a primeira avaliacao  \item fim: corresponde ao instante de encaminhamento para o GTT  \end{itemize}
+\textbf{114 - DifALSFRS\_NO\_R - Numerica - Calculada} - Taxa media de variacao inicio-fim do ALSFRS ($\frac{DifALSFRS\_NO}{0-Introducao\_NO}$) \begin{itemize}  \item pode ser positivo ou negativo (numero sem escala) \item inicio: corresponde a primeira avaliacao  \item fim: corresponde ao instante de encaminhamento para o GTT  \end{itemize}
+\textbf{115 - DifT\_reslg\_NO\_R - Numerica - Calculada} - Taxa media de variacao inicio-fim do Tempo de Resistencia de Lingua ($\frac{DifT\_reslg\_NO}{0-Introducao\_NO}$) \begin{itemize}  \item pode ser positivo ou negativo (numero sem escala) \item inicio: corresponde a primeira avaliacao  \item fim: corresponde ao instante de encaminhamento para o GTT  \end{itemize}
+
+
+\end{document}
