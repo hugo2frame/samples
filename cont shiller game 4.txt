@@ -1,0 +1,142 @@
+
+
+rm(list=ls())	#limpa a memoria por precaucao
+
+library(animation)
+
+go = function() {
+	#um passo da simulacao
+	simula<-function(){
+		#w_A eh o vetor das medias ponderadas do tipo A
+		#em que os pesos somam 1 (se res_A_num eh igual a res_A_den), 
+		#mas decaem exponencialmente com as distancias entre 
+		#a localizacao de um individuo/familia e as localizacoes dos demais
+		w_A<-sapply(1:ind_A, function(n) 
+			(sum(exp(-loc_A*(dn<-sqrt((res[,1]-res[n,1])^2+(res[,2]-res[n,2])^2)))[1:ind_A])-res_A_num)
+			/(sum(exp(-loc_A*dn))-res_A_den)
+		)
+
+		#nova localizacao
+		x_A<-rbeta(ind_A, alfa_A_dx, beta_A_dx)
+		y_A<-rbeta(ind_A, alfa_A_dy, beta_A_dy)
+
+		#distancia aa nova localizacao
+		d_A<-sqrt((x_A-res[1:ind_A,1])^2+(y_A-res[1:ind_A,2])^2)
+
+		#m_A contem os indices dos insatisfeitos do tipo A que se mudam
+		m_A<-which(w_A < intol_A & d_A < mob_A)	
+			
+		#w_B eh o vetor das medias ponderadas do tipo B
+		#em que os pesos somam 1 (se res_B_num eh igual a res_B_den), 
+		#mas decaem exponencialmente com as distancias entre 
+		#a localizacao de um individuo/familia e as localizacoes dos demais
+		w_B<-sapply((ind_A+1):ind, function(n) 
+			(sum(exp(-loc_B*(dn<-sqrt((res[,1]-res[n,1])^2+(res[,2]-res[n,2])^2)))[(ind_A+1):ind])-res_B_num)
+			/(sum(exp(-loc_B*dn))-res_B_den)
+		)
+
+		#nova localizacao
+		x_B<-rbeta(ind-ind_A, alfa_B_dx, beta_B_dx)
+		y_B<-rbeta(ind-ind_A, alfa_B_dy, beta_B_dy)
+
+		#distancia aa nova localizacao
+		d_B<-sqrt((x_B-res[(ind_A+1):ind,1])^2+(y_B-res[(ind_A+1):ind,2])^2)
+
+		#m_B contem os indices dos insatisfeitos do tipo B que se mudam
+		m_B<-which(w_B < intol_B & d_B < mob_B)
+
+		#localizacao final
+		res[m_A,1]<<-x_A[m_A]
+		res[m_A,2]<<-y_A[m_A]	
+		res[m_B+ind_A,1]<<-x_B[m_B]
+		res[m_B+ind_A,2]<<-y_B[m_B]
+				
+		#1 se ninguem estava insatisfeito
+		return(1 - any(w_A < intol_A | w_B < intol_B))
+	}
+
+	#gera um grafico
+	plota = function(i) {
+  		par(fin=c(6,6), fig=c(0,1,0,1))
+  		plot(res[,1] , res[,2], axes = F, xlab="", ylab="", col = res[,3], 
+			main = paste("Rodada", i), pch = 19, cex = 40 / sqrt(ind))
+	}
+
+	#inicializa as variaveis ind_A e res
+	ind_A<-floor(perc_A*ind)
+	res<-data.frame(
+		x<-c(rbeta(ind_A, alfa_A_x, beta_A_x), rbeta(ind - ind_A, alfa_B_x, beta_B_x)),
+		y<-c(rbeta(ind_A, alfa_A_y, beta_A_y), rbeta(ind - ind_A, alfa_B_y, beta_B_y)),
+		tipo<-c(rep("A", ind_A), rep("B", ind - ind_A))
+	)
+
+	for (j in 1:20) { plota(1) }
+
+  	for (i in 1:maxiter) {
+    		if(i %% intervalo == 0) { plota(i) }
+    		if (simula()) { break }
+  	}
+
+  	for (j in 1:20) { plota(i) }
+
+  	ani.options(interval = 3 / (i + 2))
+}
+
+#Parametros
+
+intol_A<-0.8	#intolerancia dos individuos/familias do tipo A; um valor entre 0 e 1
+
+intol_B<-0.8	#intolerancia dos individuos/familias do tipo B; um valor entre 0 e 1
+
+mob_A<-0.05	#mobilidade do tipo A
+
+mob_B<-0.05	#mobilidade do tipo B
+
+res_A_num<-1	#exclui residente do tipo A do numerador; binario; se incluir a distancia se torna absolutamente relevante
+res_A_den<-1	#exclui residente do tipo A do denominador; binario; se incluir a distancia se torna absolutamente relevante
+
+res_B_num<-1	#exclui residente do tipo B do numerador; binario; se incluir a distancia se torna absolutamente relevante
+res_B_den<-1	#exclui residente do tipo B do denominador; binario; se incluir a distancia se torna absolutamente relevante
+
+ind<-1000	#quantidade de individuos/familias; um valor inteiro positivo
+
+perc_A<-0.5	#percentual dos individuos/familias que sao do tipo A; um valor em (0, 1)
+
+loc_A<-100	#localidade dos individuos/familias do tipo A; um valor positivo
+
+loc_B<-100	#localidade dos individuos/familias do tipo B; um valor positivo
+
+alfa_A_x<-1	#parametro alfa da distribuicao Beta para a coordenada horizontal do tipo A
+beta_A_x<-1	#parametro beta da distribuicao Beta para a coordenada horizontal do tipo A
+
+alfa_A_y<-1	#parametro alfa da distribuicao Beta para a coordenada vertical do tipo A
+beta_A_y<-1	#parametro beta da distribuicao Beta para a coordenada vertical do tipo A
+
+alfa_B_x<-1	#parametro alfa da distribuicao Beta para a coordenada horizontal do tipo B
+beta_B_x<-1	#parametro beta da distribuicao Beta para a coordenada horizontal do tipo B
+
+alfa_B_y<-1	#parametro alfa da distribuicao Beta para a coordenada vertical do tipo B
+beta_B_y<-1	#parametro beta da distribuicao Beta para a coordenada vertical do tipo B
+
+alfa_A_dx<-1	#parametro alfa da distribuicao Beta para a variacao da coordenada horizontal do tipo A
+beta_A_dx<-1	#parametro beta da distribuicao Beta para a variacao da coordenada horizontal do tipo A
+
+alfa_A_dy<-1	#parametro alfa da distribuicao Beta para a variacao da coordenada vertical do tipo A
+beta_A_dy<-1	#parametro beta da distribuicao Beta para a variacao da coordenada vertical do tipo A
+
+alfa_B_dx<-1	#parametro alfa da distribuicao Beta para a variacao da coordenada horizontal do tipo B
+beta_B_dx<-1	#parametro beta da distribuicao Beta para a variacao da coordenada horizontal do tipo B
+
+alfa_B_dy<-1	#parametro alfa da distribuicao Beta para a variacao da coordenada vertical do tipo B
+beta_B_dy<-1	#parametro beta da distribuicao Beta para a variacao da coordenada vertical do tipo B
+
+intervalo<-20	#iteracoes entre graficos
+
+maxiter<-200*intervalo	#quantidade maxima de iteracoes; um valor inteiro positivo
+
+#Programa principal
+
+system.time(
+	saveGIF(go())
+)
+
