@@ -1,0 +1,249 @@
+#Atalho para fazer comentarios longos
+if(FALSE)
+	"aulas 7, 8 e 9 não precisam de sintaxe"
+
+#########################################################################
+
+#Atalho para fazer comentarios longos
+if(FALSE)
+	"aula 10 - usar a base da aula 6 e construir 
+	um gráfico de distribuição acumulada de uma 
+	variável discreta (só para mostrar como é)"
+
+#O arquivo abaixo foi usado na segunda aula,
+#assim como o trecho da sintaxe para a leitura 
+#desta base.
+
+#A biblioteca abaixo exige o Java adequado.
+#Se ocorrer algum problema, veja o link
+#https://www.r-bloggers.com/read-excel-files-from-r/
+library(xlsx)
+
+#Adequar ao endereco usado
+filmes<-read.xlsx("C:/Users/aaa/Desktop/Filmes Amostra - Versao Final.xlsx", 
+	sheetName = "filmes")
+
+#Dimensoes da base
+dim(filmes)
+
+#Inspecionar variaveis e tipos
+lapply(filmes, function(x) class(x))
+
+#Inspecionar as 10 primeiras linhas
+head(filmes, 10)
+
+#A Bilheteria Mundial eh uma variavel discreta.
+#Segue abaixo o histograma e a acumulada dessa 
+#variavel.
+
+#Grafico da distribuicao acumulada da
+#Bilheteria Mundial
+acum<-ecdf(filmes[, 10])
+
+dev.new()
+plot(acum, main=paste("Exemplo de Distribuicao Acumulada"),
+	xlab="Bilheteria Mundial (dolares)", 
+	ylab="probabilidade acumulada", 
+	col="red", cex=0.3, col.01line = "gray95")
+
+#adicionar a media e a mediana ao grafico
+abline(v=mean(filmes[, 10]), 
+	col = "black", lwd = 1)
+abline(v=median(filmes[, 10]), 
+	col = "black", lwd = 1, lty=3)
+legend(x = "bottomright", bg="white",
+ 	c("media", "mediana"),
+ 	col = c("black", "black"),
+ 	lwd = c(1, 1),
+	lty = c(1, 3))
+
+#########################################################################
+
+#Atalho para fazer comentarios longos
+if(FALSE)
+	"aula 11 - gráficos das distribuições acumuladas de:
+		1) Uniforme discreta
+		2) Bernoulli
+		3) Binomial
+		4) Hipergeométrica
+		5) Geométrica
+		6) Poisson"
+
+#Uniforme discreta
+
+#Distribuicao acumulada
+punifdisc<-function(x, val=0){
+	val<-unique(val)
+	sapply(x, function(k) 
+		length(val[val<=k]))/length(val)
+}
+
+#Grafico
+#Suporte - devem ser valores diferentes
+sup<-c(1.5, 4, 9.2, 11)
+acum<-punifdisc(c(min(sup)-1, sup), sup)
+
+dev.new()
+plot(stepfun(sup, acum), 
+	main=paste("Distribuicao Acumulada de uma Uniforme Discreta"),
+	xlab="Valores", 
+	ylab="probabilidade acumulada", 
+	pch=19, col="red", cex=0.5, verticals=F)
+
+#linhas horizontais em 0 e 1
+abline(h=c(0, 1), col="gray95", lty=2)
+
+#adicionar a media e a mediana ao grafico
+abline(v=mean(sup), 
+	col = "black", lwd = 1)
+abline(v=median(sup), 
+	col = "black", lwd = 1, lty=3)
+legend(x = "bottomright", bg="white",
+ 	c("media", "mediana"),
+ 	col = c("black", "black"),
+ 	lwd = c(1, 1),
+	lty = c(1, 3))
+
+#Bernoulli
+
+#Grafico
+sup<-0:1
+acum<-pbinom(c(min(sup)-1, sup), 1, 2/3)
+
+dev.new()
+plot(stepfun(sup, acum),
+	main=paste("Distribuicao Acumulada de uma Bernoulli(2/3)"),
+	xlab="Valores", 
+	ylab="probabilidade acumulada", 
+	pch=19, col="red", cex=0.5, verticals=F)
+
+#linhas horizontais em 0 e 1
+abline(h=c(0, 1), col="gray95", lty=2)
+
+#adicionar a media e a mediana ao grafico
+abline(v=2/3, 
+	col = "black", lwd = 1)
+abline(v=1, 
+	col = "black", lwd = 1, lty=3)
+legend(x = "bottomright", bg="white",
+ 	c("media", "mediana"),
+ 	col = c("black", "black"),
+ 	lwd = c(1, 1),
+	lty = c(1, 3))
+
+#Binomial
+
+#Grafico
+sup<-0:30
+acum<-pbinom(c(min(sup)-1, sup), 30, 2/3)
+
+dev.new()
+plot(stepfun(sup, acum),
+	main=paste("Distribuicao Acumulada de uma Binomial(30, 2/3)"),
+	xlab="Valores", 
+	ylab="probabilidade acumulada", 
+	pch=19, col="red", cex=0.5, verticals=F)
+
+#linhas horizontais em 0 e 1
+abline(h=c(0, 1), col="gray95", lty=2)
+
+#adicionar a media e a mediana ao grafico
+abline(v=20, 
+	col = "black", lwd = 1)
+abline(v=20, 
+	col = "black", lwd = 1, lty=3)
+legend(x = "bottomright", bg="white",
+ 	c("media", "mediana"),
+ 	col = c("black", "black"),
+ 	lwd = c(1, 1),
+	lty = c(1, 3))
+	
+#Hipergeometrica
+
+#Grafico
+sup<-10:30
+acum<-phyper(c(min(sup)-1, sup), 40, 20, 30)
+
+dev.new()
+plot(stepfun(sup, acum),
+	main=paste("Distribuicao Acumulada de uma Hipergeometrica(40, 20, 30),
+		\neq., Hipergeometrica(60, 40, 30)"),
+	xlab="Valores", 
+	ylab="probabilidade acumulada", 
+	pch=19, col="red", cex=0.5, verticals=F)
+
+#linhas horizontais em 0 e 1
+abline(h=c(0, 1), col="gray95", lty=2)
+
+#adicionar a media e a mediana ao grafico
+abline(v=20, 
+	col = "black", lwd = 1)
+abline(v=20, 
+	col = "black", lwd = 1, lty=3)
+legend(x = "bottomright", bg="white",
+ 	c("media", "mediana"),
+ 	col = c("black", "black"),
+ 	lwd = c(1, 1),
+	lty = c(1, 3))
+		
+#Geometrica
+
+#Grafico 
+#de fato, o suporte eh o conjunto dos inteiros
+#nao negativos ja que o R para metriza as falhas
+#que precedem o primeiro sucesso
+sup<-0:6 
+acum<-pgeom(c(min(sup)-1, sup), 2/3)
+
+dev.new()
+plot(stepfun(sup+1, acum),
+	main=paste("Distribuicao Acumulada de uma Geometrica(2/3)"),
+	xlab="Valores", 
+	ylab="probabilidade acumulada", 
+	pch=19, col="red", cex=0.5, verticals=F)
+
+#linhas horizontais em 0 e 1
+abline(h=c(0, 1), col="gray95", lty=2)
+
+#adicionar a media e a mediana para o
+#sucesso ao grafico
+abline(v=3/2, 
+	col = "black", lwd = 1)
+abline(v=1, 
+	col = "black", lwd = 1, lty=3)
+legend(x = "bottomright", bg="white",
+ 	c("media", "mediana"),
+ 	col = c("black", "black"),
+ 	lwd = c(1, 1),
+	lty = c(1, 3))
+		
+	
+#Poisson
+
+#Grafico
+#de fato, o suporte eh o conjunto dos inteiros
+#nao negativos
+sup<-0:30 
+acum<-ppois(c(min(sup)-1, sup), 20)
+
+dev.new()
+plot(stepfun(sup, acum),
+	main=paste("Distribuicao Acumulada de uma Poisson(20)"),
+	xlab="Valores", 
+	ylab="probabilidade acumulada", 
+	pch=19, col="red", cex=0.5, verticals=F)
+
+#linhas horizontais em 0 e 1
+abline(h=c(0, 1), col="gray95", lty=2)
+
+#adicionar a media e a mediana ao grafico
+abline(v=20, 
+	col = "black", lwd = 1)
+abline(v=20, 
+	col = "black", lwd = 1, lty=3)
+legend(x = "bottomright", bg="white",
+ 	c("media", "mediana"),
+ 	col = c("black", "black"),
+ 	lwd = c(1, 1),
+	lty = c(1, 3))
+
